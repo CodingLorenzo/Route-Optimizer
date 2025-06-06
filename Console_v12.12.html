@@ -1,0 +1,2868 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fleet Routing Optimization Console v12.12</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script> <!-- SheetJS Library -->
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #eef2f9; 
+            color: #334155; 
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+        .container {
+            max-width: 1600px; 
+            margin: 2rem auto;
+            padding: 2rem;   
+            background-color: white;
+            border-radius: 0.5rem; 
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08); 
+        }
+        .section-card {
+            background-color: #f8fafc; 
+            padding: 1.5rem;
+            border-radius: 0.5rem;
+            border: 1px solid #e2e8f0; 
+            margin-bottom: 2rem;
+        }
+        .step-header {
+            font-size: 1.25rem; 
+            font-weight: 600;
+            color: #0f172a; 
+            margin-bottom: 1.5rem;
+            padding-bottom: 0.75rem;
+            border-bottom: 1px solid #cbd5e1; 
+        }
+        .input-group {
+            margin-bottom: 1.25rem;
+        }
+        .input-group label {
+            display: block;
+            font-weight: 500;
+            color: #475569; 
+            margin-bottom: 0.375rem; 
+            font-size: 0.875rem;
+        }
+        .input-group input[type="text"],
+        .input-group input[type="number"],
+        .input-group input[type="time"],
+        .input-group select {
+            width: 100%;
+            padding: 0.625rem 0.875rem; 
+            border: 1px solid #cbd5e1; 
+            border-radius: 0.375rem;
+            background-color: white;
+            box-shadow: inset 0 1px 2px rgba(0,0,0,0.04);
+            font-size: 0.875rem;
+            color: #334155;
+        }
+        .input-group input:focus,
+        .input-group select:focus {
+            outline: none;
+            border-color: #3b82f6; 
+            box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.3);
+        }
+        .btn {
+            padding: 0.625rem 1.25rem;
+            border-radius: 0.375rem;
+            font-weight: 500; 
+            cursor: pointer;
+            transition: background-color 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+            font-size: 0.875rem;
+            letter-spacing: 0.025em;
+        }
+        .btn-primary {
+            background-color: #2563eb; 
+            color: white;
+            border: 1px solid transparent;
+        }
+        .btn-primary:hover { background-color: #1d4ed8; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        
+        .btn-secondary {
+            background-color: #f1f5f9; 
+            color: #334155; 
+            border: 1px solid #cbd5e1; 
+        }
+        .btn-secondary:hover { background-color: #e2e8f0; }
+        .btn-success { 
+            background-color: #10b981; 
+            color: white;
+            border: 1px solid transparent;
+        }
+        .btn-success:hover { background-color: #059669; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+
+        .btn-danger {
+            background-color: #dc2626; 
+            color: white;
+            border: 1px solid transparent;
+        }
+        .btn-danger:hover { background-color: #b91c1c; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+
+
+        .file-input-label {
+            display: inline-block; padding: 0.625rem 1.25rem; background-color: #0ea5e9; 
+            color: white; border-radius: 0.375rem; cursor: pointer; font-weight: 500; font-size: 0.875rem;
+        }
+        .file-input-label:hover { background-color: #0284c7; }
+        input[type="file"] { display: none; }
+
+        .message-box {
+            padding: 0.875rem; border-radius: 0.375rem; margin-top: 0.5rem;
+            font-size: 0.875rem; white-space: pre-wrap; border-left-width: 4px;
+        }
+        .info-box { background-color: #eff6ff; border-color: #60a5fa; color: #1e40af; } 
+        .error-box { background-color: #fee2e2; border-color: #f87171; color: #991b1b; } 
+        .success-box { background-color: #dcfce7; border-color: #4ade80; color: #166534; } 
+        
+        .results-table { width: 100%; margin-top: 1rem; border-collapse: collapse; font-size: 0.8125rem; }
+        .results-table th, .results-table td {
+            border: 1px solid #e2e8f0; 
+            padding: 0.625rem 0.875rem;
+            text-align: left;
+            white-space: nowrap;
+        }
+        .results-table th { background-color: #f1f5f9; font-weight: 600; color: #1e293b; cursor: pointer; }
+        .results-table th:hover { background-color: #e2e8f0; }
+        .results-table tr:nth-child(even) td { background-color: #f8fafc; }
+        .results-table tr:hover td { background-color: #e0f2fe; }
+        .results-table .route-summary-row td { background-color: #e0f2fe; font-weight: bold; color: #0c4a6e; }
+
+        .tabs button {
+            padding: 0.625rem 1.25rem; margin-right: 0.25rem; border-radius: 0.375rem 0.375rem 0 0;
+            border: 1px solid #cbd5e1; border-bottom: none; background-color: #e2e8f0; 
+            cursor: pointer; font-size: 0.875rem; color: #334155;
+        }
+        .tabs button.active { background-color: white; border-bottom: 1px solid white; font-weight: 600; color: #1e293b; }
+        .tab-content {
+            padding: 1.5rem; border: 1px solid #cbd5e1; border-top: none;
+            border-radius: 0 0 0.375rem 0.375rem; background-color: white;
+        }
+        #optimizationProgressDetails p { margin-bottom: 0.375rem; font-size: 0.8125rem; }
+        
+        .collapsible-trigger {
+            cursor: pointer;
+            display: inline-block;
+            padding: 0.25rem 0.5rem;
+            background-color: #f1f5f9;
+            border: 1px solid #cbd5e1;
+            border-radius: 0.25rem;
+            font-size: 0.75rem; 
+            margin-top: 0.5rem;
+            color: #334155;
+        }
+        .collapsible-trigger:hover {
+            background-color: #e2e8f0;
+        }
+        .collapsible-content {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease-out;
+            background-color: #f8fafc; 
+            padding-left: 1rem; 
+            border-left: 2px solid #cbd5e1;
+            margin-top: 0.5rem;
+        }
+        .collapsible-content.open {
+            max-height: 500px; 
+            padding-top: 0.5rem;
+            padding-bottom: 0.5rem;
+        }
+        .store-master-info ul { margin-top: 0.5rem; margin-bottom: 0.5rem; }
+        .store-master-info li { margin-bottom: 0.25rem; }
+        .filter-input {
+            width: 100%;
+            padding: 0.375rem 0.625rem;
+            border: 1px solid #cbd5e1;
+            border-radius: 0.25rem;
+            font-size: 0.75rem;
+            margin-top: 0.25rem;
+        }
+        .chart-container {
+            position: relative;
+            width: 100%;
+            max-width: 600px; 
+            margin-left: auto;
+            margin-right: auto;
+            height: 300px; 
+            max-height: 400px; 
+        }
+        @media (min-width: 768px) { 
+            .chart-container {
+                height: 350px;
+                max-height: 450px;
+            }
+        }
+        .input-summary-table { width: 100%; margin-top: 1rem; border-collapse: collapse; font-size: 0.875rem; }
+        .input-summary-table th, .input-summary-table td {
+            border: 1px solid #e2e8f0;
+            padding: 0.5rem 0.75rem;
+            text-align: left;
+        }
+        .input-summary-table th { background-color: #f8fafc; font-weight: 600; }
+    </style>
+</head>
+<body class="p-4 md:p-6">
+    <div class="container">
+        <header class="mb-8 text-center">
+            <h1 class="text-2xl font-bold text-slate-800">Fleet Routing Optimization Console v12.12</h1>
+            <p class="text-sm text-slate-500">Configure, run, and review route optimization plans.</p>
+        </header>
+
+        <!-- Section 1: Global Configuration -->
+        <section id="step1" class="section-card">
+            <h2 class="step-header">Step 1: Global Configuration</h2>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-x-6 gap-y-4">
+                <div class="input-group">
+                    <label for="runName">Run Name/Identifier</label>
+                    <input type="text" id="runName" value="Weekly Schedule">
+                </div>
+                <div class="input-group">
+                    <label for="earliestStartTime">Earliest Daily Start Time (HH:MM)</label>
+                    <input type="time" id="earliestStartTime" value="06:00">
+                </div>
+                 <div class="input-group">
+                    <label for="useTrafficData">Use Traffic Data in Optimization</label>
+                    <select id="useTrafficData">
+                        <option value="false" selected>No (Faster, less cost for matrix)</option>
+                        <option value="true">Yes (More realistic times, higher matrix cost)</option>
+                    </select>
+                </div>
+            </div>
+            
+            <h3 class="text-md font-semibold text-slate-700 mt-6 mb-3">Route Constraints</h3>
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-x-6 gap-y-4">
+                <div class="input-group">
+                    <label for="minStops">Min Stops per Primary Route</label>
+                    <input type="number" id="minStops" value="2" min="1">
+                </div>
+                <div class="input-group">
+                    <label for="maxStops">Max Stops per Route (All Types)</label>
+                    <input type="number" id="maxStops" value="8" min="1">
+                </div>
+                <div class="input-group">
+                    <label for="maxRouteTime">Max Daily Route Time (min)</label>
+                    <input type="number" id="maxRouteTime" value="660" min="1">
+                </div>
+                <div class="input-group">
+                    <label for="maxPairTime">Max Travel Between Stops (min)</label>
+                    <input type="number" id="maxPairTime" value="75" min="1">
+                </div>
+            </div>
+
+            <h3 class="text-md font-semibold text-slate-700 mt-6 mb-3">Vehicle Costs</h3>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-4">
+                <div class="input-group">
+                    <label for="costPerHour">Cost per Hour ($)</label>
+                    <input type="number" id="costPerHour" value="16.50" step="0.01" min="0">
+                </div>
+                <div class="input-group">
+                    <label for="costPerMile">Cost per Mile ($)</label>
+                    <input type="number" id="costPerMile" value="0.70" step="0.01" min="0">
+                </div>
+            </div>
+
+            <h3 class="text-md font-semibold text-slate-700 mt-6 mb-3">Break Rule</h3>
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-x-6 gap-y-4 items-end">
+                <div class="input-group">
+                    <label for="enableBreaks">Enable Breaks</label>
+                    <select id="enableBreaks">
+                        <option value="yes" selected>Yes</option>
+                        <option value="no">No</option>
+                    </select>
+                </div>
+                <div class="input-group">
+                    <label for="breakDuration">Break Duration (min)</label>
+                    <input type="number" id="breakDuration" value="60" min="0">
+                </div>
+                 <div class="input-group">
+                    <label for="workDurationBeforeBreak">Work Before Break (min)</label>
+                    <input type="number" id="workDurationBeforeBreak" value="300" min="0">
+                </div>
+                <div class="input-group">
+                    <label for="minRouteDurationForBreak">Min Work Day for Break (min)</label>
+                    <input type="number" id="minRouteDurationForBreak" value="300" min="0">
+                </div>
+                <div class="input-group"> 
+                    <label for="breakPayment">Break Payment</label>
+                    <select id="breakPayment">
+                        <option value="paid" selected>Paid (counts towards hourly cost)</option>
+                        <option value="unpaid">Unpaid (excluded from hourly cost)</option>
+                    </select>
+                </div>
+            </div>
+             <h3 class="text-md font-semibold text-slate-700 mt-6 mb-3">Merchandiser & Workload Rules</h3>
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-4">
+                 <div class="input-group">
+                    <label for="targetWeeklyHours">Target Weekly Hours per Merch</label>
+                    <input type="number" id="targetWeeklyHours" value="40" min="1">
+                </div>
+                <div class="input-group">
+                    <label for="softMinWeeklyHours">Soft Min Weekly Hours per Merch</label>
+                    <input type="number" id="softMinWeeklyHours" value="20" min="0">
+                </div>
+                <div class="input-group">
+                    <label for="maxMerchsPerZone">Max Merchs per Zone</label>
+                    <input type="number" id="maxMerchsPerZone" value="8" min="1">
+                </div>
+                <div class="input-group">
+                    <label for="minDaysOnSameRoute">Min Days on Same Route Pattern</label>
+                    <input type="number" id="minDaysOnSameRoute" value="2" min="0">
+                </div>
+                 <div class="input-group">
+                    <label for="optimizationZoneColumnName">Store Master Zone Column Name</label>
+                    <input type="text" id="optimizationZoneColumnName" value="Zone">
+                </div>
+            </div>
+        </section>
+
+        <!-- Section 2: Data Input -->
+        <section id="step2" class="section-card">
+            <h2 class="step-header">Step 2: Data Input & Preprocessing</h2>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4"> 
+                <div>
+                    <h3 class="text-md font-semibold text-slate-700 mb-3">A. Store Master Data</h3>
+                    <div class="input-group">
+                        <label for="storeMasterFile" class="file-input-label">Upload StoreMasterModel.csv</label>
+                        <input type="file" id="storeMasterFile" accept=".csv">
+                        <div id="storeMasterFileInfo" class="message-box info-box hidden"></div>
+                        <div id="storeMasterError" class="message-box error-box hidden"></div>
+                    </div>
+                    <div class="message-box info-box text-xs">
+                        <button class="collapsible-trigger" onclick="toggleCollapsible('storeMasterReqs')">
+                            Required Columns <span class="arrow-indicator">+</span>
+                        </button>
+                        <div id="storeMasterReqs" class="collapsible-content store-master-info">
+                            <ul class="list-disc list-inside ml-4 space-y-1"> 
+                                <li>`Customer`, `Store Number WF`, `Latitude`, `Longitude`, `Merch Days`, `WeeklyVisits`, `Visit Duration Mins`</li>
+                                <li>**`Zone`** (or the name specified in "Store Master Zone Column Name" in Step 1) - This column is now crucial for grouping.</li>
+                                <li>Optional: `Area` (loaded but not actively used in core logic yet, planned for future route naming)</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+                
+                <div>
+                    <h3 class="text-md font-semibold text-slate-700 mb-3">B. Distance/Duration Matrix (Optional)</h3>
+                    <div class="input-group">
+                        <label class="font-semibold">Matrix Source:</label>
+                        <div class="flex items-center space-x-4 mt-1">
+                            <div>
+                                <input type="radio" id="matrixSourceApi" name="matrixSource" value="api" checked class="mr-1">
+                                <label for="matrixSourceApi" class="font-normal text-sm">Calculate (Simulated)</label>
+                            </div>
+                            <div>
+                                <input type="radio" id="matrixSourceUpload" name="matrixSource" value="upload" class="mr-1">
+                                <label for="matrixSourceUpload" class="font-normal text-sm">Upload DistanceMatrix.csv</label>
+                            </div>
+                        </div>
+                         <p class="text-xs text-slate-500 mt-2">If uploading, ensure it contains `Store1`, `Store2`, and (`Driving_distance` or `Driving_duration_minutes`).</p>
+                    </div>
+
+                    <div id="distanceMatrixUploadOptions" class="hidden mt-4 p-4 border border-slate-200 rounded-md bg-white">
+                        <div class="input-group">
+                            <label for="distanceMatrixFile" class="file-input-label">Upload DistanceMatrix.csv</label>
+                            <input type="file" id="distanceMatrixFile" accept=".csv">
+                            <div id="distanceMatrixFileInfo" class="message-box info-box hidden"></div>
+                            <div id="distanceMatrixError" class="message-box error-box hidden"></div>
+                        </div>
+                        <p class="text-xs text-slate-500 mb-2">If matrix has distances only (`Driving_distance`), provide speeds for conversion:</p>
+                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-x-4 gap-y-2">
+                            <div class="input-group">
+                                <label for="citySpeed">City Speed (mph)</label>
+                                <input type="number" id="citySpeed" value="30" min="1">
+                            </div>
+                            <div class="input-group">
+                                <label for="highwaySpeed">Highway Speed (mph)</label>
+                                <input type="number" id="highwaySpeed" value="55" min="1">
+                            </div>
+                            <div class="input-group">
+                                <label for="distanceThreshold">Threshold for Hwy (miles)</label>
+                                <input type="number" id="distanceThreshold" value="15" min="0">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="mt-6"> <h3 class="text-md font-semibold text-slate-700 mb-3">D. Non-Walmart Default Merch Days (if `Merch Days` blank in CSV)</h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
+                    <div class="input-group">
+                        <label for="default3Visits">Default for 3 Visits/Week (e.g., MO-WE-FR)</label>
+                        <input type="text" id="default3Visits" value="MO-WE-FR">
+                    </div>
+                    <div class="input-group">
+                        <label for="default4Visits">Default for 4 Visits/Week (e.g., MO-WE-FR-SA)</label>
+                        <input type="text" id="default4Visits" value="MO-WE-FR-SA">
+                    </div>
+                </div>
+            </div>
+             <div id="dataValidationSummary" class="mt-4 message-box info-box hidden"></div>
+        </section>
+
+        <!-- Section 3: Vehicle Configuration (Simplified) -->
+        <section id="step3" class="section-card">
+            <h2 class="step-header">Step 3: Vehicle Configuration</h2>
+            <div class="message-box info-box">
+                <p>Vehicles (Merchandisers) are generated based on Zones and workload. Costs are global. No specific vehicle list input is required here.</p>
+            </div>
+        </section>
+
+        <!-- Section 4: Execute & Review -->
+        <section id="step4" class="section-card">
+            <h2 class="step-header">Step 4: Execute Optimization & Review Results</h2>
+            <div class="flex flex-wrap gap-4 mb-4"> 
+                <button id="runOptimizationBtn" class="btn btn-primary">Run Optimization</button> 
+                <button id="resetFormBtn" class="btn btn-danger">Reset Form & Clear Data</button>
+                <button id="exportAllToExcelBtn" class="btn btn-success">Export All to Excel</button> 
+            </div>
+            
+            <div id="loadingIndicator" class="mt-6 hidden p-4 border border-slate-200 rounded-md bg-white">
+                <p class="text-md font-semibold text-blue-600 mb-3">Processing Optimization Plan...</p>
+                <div id="optimizationProgressDetails" class="text-sm text-slate-600 space-y-1">
+                    <p>Status: <span id="progressStatus" class="font-medium text-slate-700">Idle</span></p>
+                    <p>Progress: <span id="progressPercent" class="font-medium text-slate-700">0</span>%</p>
+                    <p>Current Task: <span id="progressCurrentTask" class="font-medium text-slate-700">N/A</span></p>
+                    <p>Errors: <span id="progressErrors" class="font-medium text-red-600">None</span></p>
+                </div>
+            </div>
+            <div id="optimizationError" class="message-box error-box hidden mt-4"></div>
+            
+            <div id="resultsSection" class="hidden mt-6">
+                <h3 class="text-lg font-semibold text-slate-800 mb-4">Optimization Results</h3>
+                
+                <div id="resultsSummary" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4 mb-6">
+                    <!-- Summary cards will be injected here by JS -->
+                </div>
+
+                <div class="tabs mb-0"> 
+                    <button class="tab-button active" data-tab-id="dailyRoutesTab" onclick="openTab(event, 'dailyRoutesTab')">Detailed Stop Log</button>
+                    <button class="tab-button" data-tab-id="weeklyRouteSummaryTab" onclick="openTab(event, 'weeklyRouteSummaryTab')">Weekly Route Summary</button> <!-- RENAMED TAB -->
+                    <button class="tab-button" data-tab-id="weeklyContextStopLogTab" onclick="openTab(event, 'weeklyContextStopLogTab')">Weekly Context Stop Log</button> 
+                    <button class="tab-button" data-tab-id="weeklyOverviewTab" onclick="openTab(event, 'weeklyOverviewTab')">Merch. Weekly Overview</button>
+                    <button class="tab-button" data-tab-id="storeScheduleTab" onclick="openTab(event, 'storeScheduleTab')">Store Visit Schedule</button>
+                    <button class="tab-button" data-tab-id="workloadAnalysisTab" onclick="openTab(event, 'workloadAnalysisTab')">Workload Analysis</button>
+                    <button class="tab-button" data-tab-id="augmentedStoreMasterTab" onclick="openTab(event, 'augmentedStoreMasterTab')">Augmented Stores</button>
+                    <button class="tab-button" data-tab-id="unassignedVisitsTab" onclick="openTab(event, 'unassignedVisitsTab')">Unassigned Visits</button>
+                    <button class="tab-button" data-tab-id="zonePerformanceTab" onclick="openTab(event, 'zonePerformanceTab')">Zone Performance</button>
+                    <button class="tab-button" data-tab-id="fleetWeeklySummaryTab" onclick="openTab(event, 'fleetWeeklySummaryTab')">Fleet Weekly Summary</button> 
+                    <button class="tab-button" data-tab-id="runInputsTab" onclick="openTab(event, 'runInputsTab')">Run Inputs</button>
+                </div>
+
+                <div id="dailyRoutesTab" class="tab-content">
+                    <h4 class="text-md font-semibold text-slate-700 mb-1">Detailed Stop Log</h4>
+                    <input type="text" id="filterDailyRoutes" class="filter-input mb-2" placeholder="Filter table...">
+                    <div class="overflow-x-auto">
+                        <table id="dailyRoutesTable" class="results-table">
+                            <thead><tr> <!-- Headers updated in JS -->
+                                <th data-sortable="true" data-column="0">Stop ID</th>
+                                <th data-sortable="true" data-column="1">Route ID</th>
+                                <th data-sortable="true" data-column="2">Assigned Merch. ID</th>
+                                <th data-sortable="true" data-column="3">Store Number WF</th>
+                                <th data-sortable="true" data-column="4" data-type="number">Stop Seq.</th>
+                                <th data-sortable="true" data-column="5">Arrival</th>
+                                <th data-sortable="true" data-column="6" data-type="number">Service (min)</th>
+                                <th data-sortable="true" data-column="7">Departure</th>
+                                <th data-sortable="true" data-column="8" data-type="number">Travel to Stop (min)</th>
+                                <th data-sortable="true" data-column="9" data-type="number">Travel Dist. (miles)</th>
+                                <th data-sortable="false">Stop Type</th> 
+                                <th data-sortable="true" data-column="11">Day Of Week</th>
+                            </tr></thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- RENAMED/REPURPOSED TAB: Weekly Route Summary -->
+                <div id="weeklyRouteSummaryTab" class="tab-content hidden">
+                    <h4 class="text-md font-semibold text-slate-700 mb-1">Weekly Route Summary</h4>
+                    <input type="text" id="filterWeeklyRouteSummary" class="filter-input mb-2" placeholder="Filter table...">
+                    <div class="overflow-x-auto">
+                        <table id="weeklyRouteSummaryTable" class="results-table">
+                            <thead><tr> <!-- Headers updated in JS -->
+                            </tr></thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div id="weeklyContextStopLogTab" class="tab-content hidden">
+                    <h4 class="text-md font-semibold text-slate-700 mb-1">Weekly Context Stop Log</h4>
+                    <input type="text" id="filterWeeklyContextStopLog" class="filter-input mb-2" placeholder="Filter table...">
+                    <div class="overflow-x-auto">
+                        <table id="weeklyContextStopLogTable" class="results-table">
+                            <thead><tr> <!-- Headers updated in JS -->
+                            </tr></thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
+                </div>
+
+
+                <div id="weeklyOverviewTab" class="tab-content hidden">
+                     <h4 class="text-md font-semibold text-slate-700 mb-1">Merchandiser Weekly Overview</h4>
+                    <input type="text" id="filterWeeklyOverview" class="filter-input mb-2" placeholder="Filter table...">
+                    <div class="overflow-x-auto">
+                        <table id="weeklyOverviewTable" class="results-table">
+                            <thead><tr>
+                                <th data-sortable="true" data-column="0">Merch. ID</th>
+                                <th data-sortable="true" data-column="1">Zone</th>
+                                <th data-sortable="true" data-column="2">Serviced Days</th>
+                                <th data-sortable="true" data-column="3" data-type="number">Total Weekly Duration (min)</th>
+                                <th data-sortable="true" data-column="4" data-type="number">Total Weekly Travel (min)</th>
+                                <th data-sortable="true" data-column="5" data-type="number">Total Weekly Service (min)</th>
+                                <th data-sortable="true" data-column="6" data-type="number">Total Weekly Distance</th>
+                                <th data-sortable="true" data-column="7" data-type="number">Total Stops</th>
+                            </tr></thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
+                </div>
+                
+                <div id="storeScheduleTab" class="tab-content hidden">
+                    <h4 class="text-md font-semibold text-slate-700 mb-1">Store Visit Schedule</h4>
+                    <input type="text" id="filterStoreSchedule" class="filter-input mb-2" placeholder="Filter table...">
+                    <div class="overflow-x-auto">
+                        <table id="storeScheduleTable" class="results-table">
+                            <thead><tr> <!-- Headers updated in JS -->
+                                <th data-sortable="true" data-column="0">Store Number WF</th>
+                                <th data-sortable="true" data-column="1">Customer</th>
+                                <th data-sortable="true" data-column="2">Scheduled Day</th>
+                                <th data-sortable="true" data-column="3">Arrival Time</th>
+                                <th data-sortable="true" data-column="4" data-type="number">Service (min)</th>
+                                <th data-sortable="true" data-column="5">Assigned Merch. ID</th>
+                                <th data-sortable="true" data-column="6">Route ID</th>
+                                <th data-sortable="true" data-column="7">Stop ID</th>
+                            </tr></thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div id="workloadAnalysisTab" class="tab-content hidden">
+                    <h4 class="text-md font-semibold text-slate-700 mb-1">Workload Analysis per Merchandiser</h4>
+                    <input type="text" id="filterWorkload" class="filter-input mb-2" placeholder="Filter table...">
+                    <div class="overflow-x-auto mb-4">
+                        <table id="workloadTable" class="results-table">
+                            <thead><tr>
+                                <th data-sortable="true" data-column="0">Merch. ID</th>
+                                <th data-sortable="true" data-column="1" data-type="number">Total Weekly Hours</th>
+                                <th data-sortable="true" data-column="2" data-type="number">Service Hours</th>
+                                <th data-sortable="true" data-column="3" data-type="number">Travel Hours</th>
+                                <th data-sortable="true" data-column="4" data-type="number">% Travel Time</th>
+                                <th data-sortable="true" data-column="5" data-type="number">Avg Stops/Day</th>
+                                <th data-sortable="true" data-column="6" data-type="number">Total Distance</th>
+                                <th data-sortable="true" data-column="7" data-type="number">Est. Cost (Breaks Paid)</th>
+                                <th data-sortable="true" data-column="8" data-type="number">Est. Cost (Breaks Unpaid)</th>
+                                <th data-sortable="true" data-column="9" data-type="number">Cost/Stop (Breaks Paid)</th>
+                                <th data-sortable="true" data-column="10">Flagged</th>
+                            </tr></thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
+                    <div>
+                        <h5 class="text-md font-semibold text-slate-700 mt-4 mb-2">Merchandiser Workload Balance (vs Target Weekly Hours)</h5>
+                        <div class="chart-container">
+                           <canvas id="workloadBalanceChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="augmentedStoreMasterTab" class="tab-content hidden">
+                    <h4 class="text-md font-semibold text-slate-700 mb-1">Augmented Store Master Data</h4>
+                    <input type="text" id="filterAugmentedStoreMaster" class="filter-input mb-2" placeholder="Filter table...">
+                    <div class="overflow-x-auto">
+                        <table id="augmentedStoreMasterTable" class="results-table">
+                            <thead><tr>
+                                <!-- Headers will be dynamically generated here -->
+                            </tr></thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div id="unassignedVisitsTab" class="tab-content hidden">
+                    <h4 class="text-md font-semibold text-slate-700 mb-1">Unassigned Visits</h4>
+                    <input type="text" id="filterUnassignedVisits" class="filter-input mb-2" placeholder="Filter table...">
+                    <div class="overflow-x-auto">
+                        <table id="unassignedVisitsTable" class="results-table">
+                            <thead><tr>
+                                <th data-sortable="true" data-column="0">Store Number WF</th>
+                                <th data-sortable="true" data-column="1">Customer</th>
+                                <th data-sortable="true" data-column="2">Day Of Week</th>
+                                <th data-sortable="true" data-column="3" data-type="number">Visit Duration (min)</th>
+                                <th data-sortable="true" data-column="4">Zone</th>
+                                <th data-sortable="true" data-column="5">Reason</th>
+                            </tr></thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div id="zonePerformanceTab" class="tab-content hidden">
+                    <h4 class="text-md font-semibold text-slate-700 mb-1">Zone Performance</h4>
+                    <input type="text" id="filterZonePerformance" class="filter-input mb-2" placeholder="Filter table...">
+                    <div class="overflow-x-auto">
+                        <table id="zonePerformanceTable" class="results-table">
+                            <thead><tr>
+                                <th data-sortable="true" data-column="0">Zone</th>
+                                <th data-sortable="true" data-column="1" data-type="number">Total Stores in Zone</th>
+                                <th data-sortable="true" data-column="2" data-type="number">Total Visits Processed</th>
+                                <th data-sortable="true" data-column="3" data-type="number">Merchandisers Assigned</th>
+                                <th data-sortable="true" data-column="4" data-type="number">Total Est. Cost ($)</th>
+                                <th data-sortable="true" data-column="5" data-type="number">Total Route Duration (min)</th>
+                                <th data-sortable="true" data-column="6" data-type="number">Total Travel Duration (min)</th>
+                                <th data-sortable="true" data-column="7" data-type="number">Total Service Duration (min)</th>
+                            </tr></thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div id="fleetWeeklySummaryTab" class="tab-content hidden">
+                    <h4 class="text-md font-semibold text-slate-700 mb-1">Fleet Weekly Summary</h4>
+                    <div class="overflow-x-auto">
+                        <table id="fleetWeeklySummaryTable" class="results-table">
+                            <thead>
+                                <tr>
+                                    <th>Metric</th>
+                                    <th>Value</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <!-- Data will be injected here -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                
+                <div id="runInputsTab" class="tab-content hidden">
+                    <h4 class="text-md font-semibold text-slate-700 mb-1">Optimization Run Inputs</h4>
+                    <div class="overflow-x-auto">
+                        <table id="runInputsTable" class="input-summary-table">
+                            <thead>
+                                <tr>
+                                    <th>Parameter</th>
+                                    <th>Value</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <!-- Data will be injected here -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+
+            </div>
+        </section>
+    </div>
+
+    <script>
+        // --- Global Store for Data ---
+        let storeMasterData = []; 
+        let distanceMatrixData = []; 
+        let csvHeaders = { 
+            storeMaster: [],
+            distanceMatrix: []
+        };
+        let merchandiserRouteCounters = {}; 
+        let zoneDayRouteCounters = {}; 
+        let workloadBalanceChartInstance = null; 
+        let excelExportData = {}; 
+        let lastRunConfig = {}; 
+        let merchandiserWeeklyStats = {}; 
+        let nextMerchCountersByZone = {}; 
+        const dayOrder = ["MO", "TU", "WE", "TH", "FR", "SA", "SU"]; // Standard day order for sorting
+        const dayProcessingOrder = ["FR", "SA", "MO", "TU", "WE", "TH", "SU"]; 
+
+
+        // --- DOM Elements (Cached for performance) ---
+        const runNameEl = document.getElementById('runName');
+        const earliestStartTimeEl = document.getElementById('earliestStartTime');
+        const useTrafficDataEl = document.getElementById('useTrafficData'); 
+        const minStopsEl = document.getElementById('minStops');
+        const maxStopsEl = document.getElementById('maxStops');
+        const maxRouteTimeEl = document.getElementById('maxRouteTime');
+        const maxPairTimeEl = document.getElementById('maxPairTime');
+        const costPerHourEl = document.getElementById('costPerHour');
+        const costPerMileEl = document.getElementById('costPerMile');
+        const enableBreaksEl = document.getElementById('enableBreaks');
+        const breakDurationEl = document.getElementById('breakDuration');
+        const workDurationBeforeBreakEl = document.getElementById('workDurationBeforeBreak');
+        const minRouteDurationForBreakEl = document.getElementById('minRouteDurationForBreak');
+        const breakPaymentEl = document.getElementById('breakPayment'); 
+        const targetWeeklyHoursEl = document.getElementById('targetWeeklyHours');
+        const softMinWeeklyHoursEl = document.getElementById('softMinWeeklyHours');
+        const maxMerchsPerZoneEl = document.getElementById('maxMerchsPerZone'); 
+        const minDaysOnSameRouteEl = document.getElementById('minDaysOnSameRoute');
+        const optimizationZoneColumnNameEl = document.getElementById('optimizationZoneColumnName');
+        const storeMasterFileEl = document.getElementById('storeMasterFile');
+        const storeMasterFileInfoEl = document.getElementById('storeMasterFileInfo');
+        const storeMasterErrorEl = document.getElementById('storeMasterError');
+        const matrixSourceApiEl = document.getElementById('matrixSourceApi');
+        const matrixSourceUploadEl = document.getElementById('matrixSourceUpload');
+        const distanceMatrixUploadOptionsEl = document.getElementById('distanceMatrixUploadOptions');
+        const distanceMatrixFileEl = document.getElementById('distanceMatrixFile');
+        const distanceMatrixFileInfoEl = document.getElementById('distanceMatrixFileInfo');
+        const distanceMatrixErrorEl = document.getElementById('distanceMatrixError');
+        const citySpeedEl = document.getElementById('citySpeed');
+        const highwaySpeedEl = document.getElementById('highwaySpeed');
+        const distanceThresholdEl = document.getElementById('distanceThreshold');
+        const default3VisitsEl = document.getElementById('default3Visits');
+        const default4VisitsEl = document.getElementById('default4Visits');
+        const dataValidationSummaryEl = document.getElementById('dataValidationSummary');
+        const runOptimizationBtnEl = document.getElementById('runOptimizationBtn');
+        const resetFormBtnEl = document.getElementById('resetFormBtn'); 
+        const exportAllToExcelBtnEl = document.getElementById('exportAllToExcelBtn'); 
+        const loadingIndicatorEl = document.getElementById('loadingIndicator');
+        const optimizationProgressDetailsEl = document.getElementById('optimizationProgressDetails'); 
+        const progressStatusEl = document.getElementById('progressStatus'); 
+        const progressPercentEl = document.getElementById('progressPercent'); 
+        const progressCurrentTaskEl = document.getElementById('progressCurrentTask');
+        const progressErrorsEl = document.getElementById('progressErrors'); 
+        const optimizationErrorEl = document.getElementById('optimizationError');
+        const resultsSectionEl = document.getElementById('resultsSection');
+        const resultsSummaryEl = document.getElementById('resultsSummary');
+        const dailyRoutesTableBodyEl = document.getElementById('dailyRoutesTable').getElementsByTagName('tbody')[0];
+        const weeklyRouteSummaryTableBodyEl = document.getElementById('weeklyRouteSummaryTable').getElementsByTagName('tbody')[0]; // RENAMED
+        const weeklyContextStopLogTableBodyEl = document.getElementById('weeklyContextStopLogTable').getElementsByTagName('tbody')[0];
+        const weeklyOverviewTableBodyEl = document.getElementById('weeklyOverviewTable').getElementsByTagName('tbody')[0];
+        const storeScheduleTableBodyEl = document.getElementById('storeScheduleTable').getElementsByTagName('tbody')[0];
+        const workloadTableBodyEl = document.getElementById('workloadTable').getElementsByTagName('tbody')[0];
+        const augmentedStoreMasterTableEl = document.getElementById('augmentedStoreMasterTable');
+        const augmentedStoreMasterTableHeadEl = augmentedStoreMasterTableEl.getElementsByTagName('thead')[0].getElementsByTagName('tr')[0];
+        const augmentedStoreMasterTableBodyEl = augmentedStoreMasterTableEl.getElementsByTagName('tbody')[0];
+        const unassignedVisitsTableBodyEl = document.getElementById('unassignedVisitsTable').getElementsByTagName('tbody')[0]; 
+        const zonePerformanceTableBodyEl = document.getElementById('zonePerformanceTable').getElementsByTagName('tbody')[0]; 
+        const fleetWeeklySummaryTableBodyEl = document.getElementById('fleetWeeklySummaryTable').getElementsByTagName('tbody')[0]; 
+        const runInputsTableBodyEl = document.getElementById('runInputsTable').getElementsByTagName('tbody')[0]; 
+        
+        const filterInputs = {
+            dailyRoutes: document.getElementById('filterDailyRoutes'),
+            weeklyRouteSummary: document.getElementById('filterWeeklyRouteSummary'), // RENAMED
+            weeklyContextStopLog: document.getElementById('filterWeeklyContextStopLog'),
+            weeklyOverview: document.getElementById('filterWeeklyOverview'),
+            storeSchedule: document.getElementById('filterStoreSchedule'),
+            workload: document.getElementById('filterWorkload'),
+            augmentedStoreMaster: document.getElementById('filterAugmentedStoreMaster'),
+            unassignedVisits: document.getElementById('filterUnassignedVisits'),
+            zonePerformance: document.getElementById('filterZonePerformance') 
+        };
+
+        // --- Helper Function Definitions ---
+        function showMessage(el, message, isError = false, isSuccess = false) {
+            if (!el) return; 
+            el.textContent = message;
+            el.classList.remove('hidden', 'error-box', 'info-box', 'success-box'); 
+            if (message) { 
+                if (isError) el.classList.add('error-box');
+                else if (isSuccess) el.classList.add('success-box');
+                else el.classList.add('info-box');
+                el.classList.add('message-box'); 
+            } else {
+                el.classList.add('hidden'); 
+            }
+        }
+
+        function hideMessage(el) {
+            if (!el) return;
+            el.classList.add('hidden');
+            el.textContent = '';
+        }
+
+        function openTab(event, tabName) {
+            let i, tabcontent, tablinks;
+            tabcontent = document.getElementsByClassName("tab-content");
+            for (i = 0; i < tabcontent.length; i++) { tabcontent[i].classList.add("hidden"); }
+            tablinks = document.getElementsByClassName("tab-button");
+            for (i = 0; i < tablinks.length; i++) { tablinks[i].classList.remove("active"); }
+            
+            const tabElement = document.getElementById(tabName);
+            if (tabElement) tabElement.classList.remove("hidden");
+            if (event && event.currentTarget) event.currentTarget.classList.add("active");
+        }
+        
+        function toggleCollapsible(elementId) {
+            const content = document.getElementById(elementId);
+            const trigger = content.previousElementSibling; 
+            const arrow = trigger.querySelector('.arrow-indicator');
+            if (content.classList.contains('open')) {
+                content.classList.remove('open');
+                content.style.maxHeight = null; 
+                if(arrow) arrow.textContent = '+';
+            } else {
+                content.classList.add('open');
+                content.style.maxHeight = content.scrollHeight + "px"; 
+                if(arrow) arrow.textContent = '-';
+            }
+        }
+
+        function timeToMinutes(timeStr) { 
+            if (!timeStr || !timeStr.includes(':')) return 0; 
+            const [hours, minutes] = timeStr.split(':').map(Number);
+            return hours * 60 + minutes;
+        }
+
+        function minutesToTime(totalMinutes) { 
+            if (isNaN(totalMinutes) || totalMinutes < 0) return "00:00"; 
+            const hours = Math.floor(totalMinutes / 60);
+            const minutes = Math.round(totalMinutes % 60); 
+            return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
+        }
+        
+        /**
+         * Takes an array or Set of day abbreviations (e.g., ['FR', 'MO']), sorts them sequentially,
+         * and joins them with a hyphen.
+         * @param {Set<string>|Array<string>} daysSet - The set or array of day abbreviations.
+         * @returns {string} A formatted day string (e.g., "MO-FR").
+         */
+        function formatDayString(daysSet) {
+            return Array.from(daysSet).sort((a, b) => dayOrder.indexOf(a) - dayOrder.indexOf(b)).join('-');
+        }
+
+
+        function sanitizeForId(text) {
+            if (text === null || text === undefined) return "NA"; 
+            return String(text).replace(/[^a-zA-Z0-9_-]/g, '_');
+        }
+        
+        function sanitizeZoneNameForId(zoneName) {
+            if (zoneName === null || zoneName === undefined) return "NA_Zone";
+            return String(zoneName).replace(/\s+/g, '').replace(/[^a-zA-Z0-9-]/g, ''); 
+        }
+        
+        // --- Table Sorting and Filtering ---
+        function sortTableByColumn(tbody, columnIndex, type = 'string', asc = true) {
+            const dirModifier = asc ? 1 : -1;
+            const rowsArray = Array.from(tbody.querySelectorAll('tr'));
+
+            if (tbody.id === dailyRoutesTableBodyEl.id) { 
+                const routeGroups = [];
+                let currentGroup = null;
+
+                rowsArray.forEach(row => {
+                    if (row.classList.contains('route-summary-row')) {
+                        if (currentGroup) routeGroups.push(currentGroup);
+                        currentGroup = { summaryRow: row, dataRows: [] };
+                    } else if (currentGroup) {
+                        currentGroup.dataRows.push(row);
+                    } else { 
+                        if (routeGroups.length === 0 || routeGroups[0].summaryRow !== null) {
+                           routeGroups.unshift({ summaryRow: null, dataRows: []}); 
+                        }
+                        routeGroups[0].dataRows.push(row);
+                    }
+                });
+                if (currentGroup) routeGroups.push(currentGroup);
+                
+                routeGroups.forEach(group => {
+                    group.dataRows.sort((a, b) => {
+                        const aValEl = a.querySelector(`td:nth-child(${columnIndex + 1})`);
+                        const bValEl = b.querySelector(`td:nth-child(${columnIndex + 1})`);
+                        const aVal = aValEl ? aValEl.textContent.trim() : "";
+                        const bVal = bValEl ? bValEl.textContent.trim() : "";
+
+                        if (type === 'number') {
+                            const numA = parseFloat(aVal.replace(/[^0-9.-]+/g,"")); 
+                            const numB = parseFloat(bVal.replace(/[^0-9.-]+/g,""));
+                            if (isNaN(numA) && isNaN(numB)) return 0;
+                            if (isNaN(numA)) return 1 * dirModifier; 
+                            if (isNaN(numB)) return -1 * dirModifier; 
+                            return (numA - numB) * dirModifier;
+                        } else {
+                            return aVal.localeCompare(bVal, undefined, { numeric: true, sensitivity: 'base' }) * dirModifier;
+                        }
+                    });
+                });
+                
+                while (tbody.firstChild) tbody.removeChild(tbody.firstChild);
+                routeGroups.forEach(group => {
+                    if (group.summaryRow) tbody.appendChild(group.summaryRow); 
+                    group.dataRows.forEach(dataRow => tbody.appendChild(dataRow)); 
+                });
+
+            } else { 
+                const dataRowsToSort = rowsArray.slice(); 
+                const sortedDataRows = dataRowsToSort.sort((a, b) => {
+                    const aValEl = a.querySelector(`td:nth-child(${columnIndex + 1})`);
+                    const bValEl = b.querySelector(`td:nth-child(${columnIndex + 1})`);
+                    const aVal = aValEl ? aValEl.textContent.trim() : "";
+                    const bVal = bValEl ? bValEl.textContent.trim() : "";
+
+                    if (type === 'number') {
+                        const numA = parseFloat(aVal.replace(/[^0-9.-]+/g,""));
+                        const numB = parseFloat(bVal.replace(/[^0-9.-]+/g,""));
+                        if (isNaN(numA) && isNaN(numB)) return 0;
+                        if (isNaN(numA)) return 1 * dirModifier;
+                        if (isNaN(numB)) return -1 * dirModifier;
+                        return (numA - numB) * dirModifier;
+                    } else {
+                        return aVal.localeCompare(bVal, undefined, { numeric: true, sensitivity: 'base' }) * dirModifier;
+                    }
+                });
+
+                while (tbody.firstChild) tbody.removeChild(tbody.firstChild);
+                tbody.append(...sortedDataRows); 
+            }
+        }
+        
+        function filterTable(tbody, filterText) {
+            const filter = filterText.toLowerCase();
+            const rows = tbody.querySelectorAll('tr');
+            
+            if (tbody.id === dailyRoutesTableBodyEl.id) { 
+                let currentSummaryRow = null;
+                let currentGroupHasVisibleDataRow = false;
+
+                rows.forEach(row => {
+                    if (row.classList.contains('route-summary-row')) {
+                        if (currentSummaryRow && !currentGroupHasVisibleDataRow && filter !== "") { 
+                            currentSummaryRow.style.display = "none";
+                        }
+                        currentSummaryRow = row; 
+                        currentGroupHasVisibleDataRow = false; 
+                        
+                        if (filter === "" || row.textContent.toLowerCase().includes(filter)) {
+                             currentSummaryRow.style.display = ""; 
+                             if (filter !== "") currentGroupHasVisibleDataRow = true; 
+                        } else {
+                            currentSummaryRow.style.display = "none";
+                        }
+
+                    } else { 
+                        const cells = row.querySelectorAll('td');
+                        let match = false;
+                        cells.forEach(cell => {
+                            if (cell.textContent.toLowerCase().includes(filter)) {
+                                match = true;
+                            }
+                        });
+                        row.style.display = match ? "" : "none";
+                        if (match) {
+                            currentGroupHasVisibleDataRow = true;
+                            if(currentSummaryRow) currentSummaryRow.style.display = ""; 
+                        }
+                    }
+                });
+                if (currentSummaryRow && !currentGroupHasVisibleDataRow && filter !== "") {
+                    currentSummaryRow.style.display = "none";
+                }
+                if (filter === "" && currentSummaryRow && !currentSummaryRow.textContent.toLowerCase().includes(filter)) { 
+                }
+
+
+            } else { 
+                rows.forEach(row => {
+                    const cells = row.querySelectorAll('td');
+                    let match = false;
+                    cells.forEach(cell => {
+                        if (cell.textContent.toLowerCase().includes(filter)) {
+                            match = true;
+                        }
+                    });
+                    row.style.display = match ? "" : "none";
+                });
+            }
+        }
+
+        function resetApplicationState() {
+            document.getElementById('runName').value = "Weekly Schedule"; 
+            document.getElementById('earliestStartTime').value = "06:00";
+            document.getElementById('useTrafficData').value = "false";
+            document.getElementById('minStops').value = "2"; 
+            document.getElementById('maxStops').value = "8";
+            document.getElementById('maxRouteTime').value = "720";
+            document.getElementById('maxPairTime').value = "90"; 
+            document.getElementById('costPerHour').value = "16.50";
+            document.getElementById('costPerMile').value = "0.70";
+            document.getElementById('enableBreaks').value = "yes";
+            document.getElementById('breakDuration').value = "60";
+            document.getElementById('workDurationBeforeBreak').value = "300";
+            document.getElementById('minRouteDurationForBreak').value = "300";
+            document.getElementById('breakPayment').value = "paid";
+            document.getElementById('targetWeeklyHours').value = "40";
+            document.getElementById('softMinWeeklyHours').value = "20";
+            document.getElementById('maxMerchsPerZone').value = "8"; 
+            document.getElementById('minDaysOnSameRoute').value = "2";
+            document.getElementById('optimizationZoneColumnName').value = "Zone";
+
+            document.getElementById('storeMasterFile').value = ""; 
+            document.getElementById('distanceMatrixFile').value = ""; 
+            document.getElementById('matrixSourceApi').checked = true; 
+            distanceMatrixUploadOptionsEl.classList.add('hidden');
+            document.getElementById('citySpeed').value = "30";
+            document.getElementById('highwaySpeed').value = "55";
+            document.getElementById('distanceThreshold').value = "15";
+            document.getElementById('default3Visits').value = "MO-WE-FR";
+            document.getElementById('default4Visits').value = "MO-WE-FR-SA";
+
+            storeMasterData = [];
+            distanceMatrixData = [];
+            csvHeaders = { storeMaster: [], distanceMatrix: [] }; 
+            merchandiserRouteCounters = {};
+            zoneDayRouteCounters = {};
+            excelExportData = {}; 
+            lastRunConfig = {};
+            merchandiserWeeklyStats = {};
+            nextMerchCountersByZone = {};
+
+            hideMessage(storeMasterFileInfoEl);
+            hideMessage(storeMasterErrorEl);
+            hideMessage(distanceMatrixFileInfoEl);
+            hideMessage(distanceMatrixErrorEl);
+            hideMessage(dataValidationSummaryEl);
+            hideMessage(optimizationErrorEl);
+
+            resultsSectionEl.classList.add('hidden');
+            loadingIndicatorEl.classList.add('hidden');
+            optimizationProgressDetailsEl.classList.add('hidden'); 
+            progressStatusEl.textContent = "Idle"; 
+            progressPercentEl.textContent = "0";
+            progressCurrentTaskEl.textContent = "N/A";
+            progressErrorsEl.textContent = "None";
+
+            const tableBodies = [
+                dailyRoutesTableBodyEl, weeklyRouteSummaryTableBodyEl,
+                weeklyContextStopLogTableBodyEl, weeklyOverviewTableBodyEl,
+                storeScheduleTableBodyEl, workloadTableBodyEl, augmentedStoreMasterTableBodyEl,
+                unassignedVisitsTableBodyEl, zonePerformanceTableBodyEl, fleetWeeklySummaryTableBodyEl,
+                runInputsTableBodyEl 
+            ];
+            tableBodies.forEach(tbody => { if(tbody) tbody.innerHTML = ''; });
+            if(augmentedStoreMasterTableHeadEl) augmentedStoreMasterTableHeadEl.innerHTML = ''; 
+            
+            if (workloadBalanceChartInstance) {
+                workloadBalanceChartInstance.destroy();
+                workloadBalanceChartInstance = null;
+            }
+
+            const firstTabButton = document.querySelector('.tabs button');
+            if (firstTabButton) {
+                 openTab({currentTarget: firstTabButton}, firstTabButton.dataset.tabId ); 
+            }
+            
+            showMessage(dataValidationSummaryEl, "Form reset and all data cleared.", false, true);
+            setTimeout(() => hideMessage(dataValidationSummaryEl), 3000); 
+            console.log("Application state reset.");
+        }
+
+        // --- Data Processing Functions ---
+        function parseCSV(csvText, headerStorageKey) {
+            const lines = csvText.trim().split(/\r\n|\n/); 
+            if (lines.length === 0) {
+                console.warn(`CSV content for ${headerStorageKey} is empty or only whitespace.`);
+                csvHeaders[headerStorageKey] = []; 
+                return [];
+            }
+            const headers = lines[0].split(',').map(h => h.trim().replace(/^"|"$/g, '')); 
+            csvHeaders[headerStorageKey] = headers; 
+            
+            const data = [];
+            if (lines.length === 1 && headers.length > 0) { 
+                console.warn(`CSV for ${headerStorageKey} contains only a header row.`);
+            }
+
+            for (let i = 1; i < lines.length; i++) {
+                if (lines[i].trim() === "") continue; 
+                
+                const values = [];
+                let currentVal = '';
+                let inQuotes = false;
+                for (let char of lines[i]) {
+                    if (char === '"') {
+                        inQuotes = !inQuotes;
+                    } else if (char === ',' && !inQuotes) {
+                        values.push(currentVal.trim());
+                        currentVal = '';
+                    } else {
+                        currentVal += char;
+                    }
+                }
+                values.push(currentVal.trim()); 
+
+                if (values.length === headers.length) {
+                    let row = {};
+                    headers.forEach((header, index) => {
+                        row[header] = values[index].replace(/^"|"$/g, ''); 
+                    });
+                    data.push(row);
+                } else { 
+                    console.warn(`Skipping line ${i+1} in CSV ${headerStorageKey} due to column mismatch. Expected ${headers.length} (Headers: ${headers.join(',')}), got ${values.length} (Values: ${values.join(',')}). Line content: ${lines[i]}`); 
+                }
+            }
+            return data;
+        }
+
+        function handleStoreMasterUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return; 
+            storeMasterFileInfoEl.classList.remove('hidden'); 
+            showMessage(storeMasterFileInfoEl, `Loading ${file.name}...`);
+            hideMessage(storeMasterErrorEl); 
+
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                try {
+                    storeMasterData = parseCSV(e.target.result, 'storeMaster'); 
+                    if (validateStoreMaster()) { 
+                        showMessage(storeMasterFileInfoEl, `Loaded ${storeMasterData.length} stores from ${file.name}. Headers: ${csvHeaders.storeMaster.join(', ')}`, false, true);
+                        updateDataValidationSummaryAfterProcessing(); 
+                    } else {
+                        storeMasterData = []; 
+                        updateDataValidationSummaryAfterProcessing();
+                    }
+                } catch (err) {
+                    storeMasterData = []; 
+                    showMessage(storeMasterErrorEl, `Error parsing Store Master CSV: ${err.message}`, true);
+                    hideMessage(storeMasterFileInfoEl);
+                    updateDataValidationSummaryAfterProcessing();
+                }
+            };
+            reader.onerror = () => { 
+                showMessage(storeMasterErrorEl, `Error reading file ${file.name}.`, true); 
+                hideMessage(storeMasterFileInfoEl); 
+                updateDataValidationSummaryAfterProcessing();
+            };
+            reader.readAsText(file);
+        }
+
+        function validateStoreMaster() { 
+            if (storeMasterData.length === 0 && csvHeaders.storeMaster.length === 0) { 
+                showMessage(storeMasterErrorEl, "Store Master CSV is empty or could not be parsed.", true);
+                hideMessage(storeMasterFileInfoEl);
+                return false;
+            }
+             if (storeMasterData.length === 0 && csvHeaders.storeMaster.length > 0) { 
+                showMessage(storeMasterErrorEl, "Store Master CSV contains headers but no data rows.", true);
+                hideMessage(storeMasterFileInfoEl);
+            }
+
+            const headers = csvHeaders.storeMaster || []; 
+            const zoneColumnName = optimizationZoneColumnNameEl.value.trim() || "Zone"; 
+            const baseRequiredCols = ['Customer', 'Store Number WF', 'Merch Days', 'WeeklyVisits', 'Visit Duration Mins', zoneColumnName];
+            
+            for (const col of baseRequiredCols) {
+                if (!headers.includes(col)) {
+                    showMessage(storeMasterErrorEl, `Missing required column in Store Master CSV: ${col}. Detected headers: ${headers.join(', ')}`, true);
+                    hideMessage(storeMasterFileInfoEl);
+                    return false;
+                }
+            }
+            if (!((headers.includes('Latitude') && headers.includes('Longitude')) || headers.includes('FullAddress'))) {
+                showMessage(storeMasterErrorEl, "Store Master CSV must contain either ('Latitude' AND 'Longitude') OR 'FullAddress' for location.", true);
+                hideMessage(storeMasterFileInfoEl);
+                return false;
+            }
+            return true; 
+        }
+        
+        function updateDataValidationSummaryAfterProcessing() {
+            let message = "";
+            let isError = false;
+            let isSuccess = false; 
+            const zoneColumnName = optimizationZoneColumnNameEl.value.trim() || "Zone";
+            
+            if (storeMasterData.length > 0 && validateStoreMaster()) { 
+                message += `Store Master: ${storeMasterData.length} stores loaded. Grouping will be by column: '${zoneColumnName}'.\n`;
+                if(storeMasterData.every(s => !s[zoneColumnName] || String(s[zoneColumnName]).trim() === "")) {
+                    message += `WARNING: The specified Zone column '${zoneColumnName}' appears to be empty for all stores. Optimization may not group correctly.\n`;
+                    isError = true; 
+                } else {
+                    isSuccess = true; 
+                }
+            } else if (storeMasterFileEl.files.length > 0 && storeMasterData.length === 0 && csvHeaders.storeMaster.length > 0){
+                 message += "Store Master Data: Headers parsed, but no valid data rows found. Check CSV formatting.\n"; isError = true;
+            } else if (storeMasterFileEl.files.length > 0) { 
+                 message += "Store Master Data: Error during loading or validation. Check messages near file input.\n"; isError = true;
+            } else {
+                message += "Store Master Data: Not loaded.\n"; isError = true;
+            }
+
+            if (document.getElementById('matrixSourceUpload').checked) {
+                 if (distanceMatrixData.length > 0) { 
+                    message += `Distance Matrix: ${distanceMatrixData.length} pairs processed.\n`;
+                    if(!isError) isSuccess = true; 
+                 } else if (distanceMatrixFileEl.files.length > 0) { 
+                    message += `Distance Matrix: File uploaded but error during processing or no valid pairs found. Check messages.\n`; 
+                    isError = true; 
+                    isSuccess = false; 
+                 }
+                 else { 
+                    message += `Distance Matrix: Selected for upload, but no file uploaded or processed.\n`; 
+                    isError = true; 
+                    isSuccess = false; 
+                 }
+            } else {
+                message += `Distance Matrix: To be calculated via API (simulated).\n`;
+                if(!isError) isSuccess = true; 
+            }
+            
+            if (message.trim() !== "") {
+                 showMessage(dataValidationSummaryEl, message.trim(), isError, isSuccess && !isError); 
+            } else {
+                 hideMessage(dataValidationSummaryEl);
+            }
+        }
+
+        function handleDistanceMatrixUpload(event) {
+            console.log("handleDistanceMatrixUpload triggered."); 
+            hideMessage(distanceMatrixErrorEl); 
+            showMessage(distanceMatrixFileInfoEl, ""); 
+
+            const file = event.target.files[0];
+            if (!file) { 
+                console.log("No file selected or selection cancelled."); 
+                showMessage(distanceMatrixFileInfoEl, "File selection cancelled.", false); 
+                setTimeout(() => hideMessage(distanceMatrixFileInfoEl), 3000);
+                if (distanceMatrixFileEl) distanceMatrixFileEl.value = ''; 
+                return;
+            }
+            
+            showMessage(distanceMatrixFileInfoEl, `Loading ${file.name}...`);
+            console.log(`Loading distance matrix file: ${file.name}`); 
+
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                console.log("FileReader onload event for Distance Matrix."); 
+                try {
+                    const csvText = e.target.result;
+                    if (!csvText || csvText.trim() === "") { 
+                        throw new Error("Uploaded Distance Matrix file is empty.");
+                    }
+                    console.log("Distance Matrix CSV Text loaded, attempting to parse...");
+                    const rawMatrixData = parseCSV(csvText, 'distanceMatrix'); 
+                    console.log(`Parsed rawMatrixData for Distance Matrix, length: ${rawMatrixData.length}`); 
+                    
+                    if (rawMatrixData.length === 0 && csvText.trim().split(/\r\n|\n/).length > 1 && csvHeaders.distanceMatrix.length > 0) {
+                        showMessage(distanceMatrixErrorEl, `Distance Matrix CSV parsing failed to extract data rows. Ensure data columns match header count (${csvHeaders.distanceMatrix.length} columns).`, true);
+                        hideMessage(distanceMatrixFileInfoEl);
+                        distanceMatrixData = []; 
+                        console.warn("Distance Matrix: Parsed headers but no valid data rows."); 
+                    } else if (validateDistanceMatrix(rawMatrixData)) { 
+                        console.log("Distance Matrix validated successfully."); 
+                        const citySpeed = parseFloat(citySpeedEl.value);
+                        const highwaySpeed = parseFloat(highwaySpeedEl.value);
+                        const thresholdMiles = parseFloat(distanceThresholdEl.value);
+
+                        distanceMatrixData = rawMatrixData.map(pair => {
+                            let durationSeconds;
+                            let distanceMiles;
+                            if (pair.Driving_duration_minutes && !isNaN(parseFloat(pair.Driving_duration_minutes))) {
+                                durationSeconds = parseFloat(pair.Driving_duration_minutes) * 60;
+                                const avgSpeedForEstimate = (citySpeed + highwaySpeed) / 2 || 40; 
+                                distanceMiles = (durationSeconds / 3600) * avgSpeedForEstimate;
+                            } else if (pair.Driving_distance && !isNaN(parseFloat(pair.Driving_distance))) {
+                                distanceMiles = parseFloat(pair.Driving_distance);
+                                const speedToUse = distanceMiles >= thresholdMiles ? highwaySpeed : citySpeed;
+                                if (speedToUse <= 0 || isNaN(speedToUse)) { 
+                                     console.warn("Invalid speed for pair", pair, "defaulting duration to 1800s (30 min).");
+                                     durationSeconds = 1800; 
+                                } else {
+                                     durationSeconds = (distanceMiles / speedToUse) * 3600; 
+                                }
+                            } else {
+                                console.warn("Skipping pair due to missing/invalid distance or duration after validation:", pair);
+                                return null; 
+                            }
+                            return {
+                                store1: pair.Store1,
+                                store2: pair.Store2,
+                                durationSeconds: Math.round(durationSeconds), 
+                                distanceMiles: parseFloat(distanceMiles.toFixed(2)) 
+                            };
+                        }).filter(p => p !== null); 
+
+                        showMessage(distanceMatrixFileInfoEl, `Loaded and processed ${distanceMatrixData.length} pairs from ${file.name}.`, false, true);
+                        hideMessage(distanceMatrixErrorEl); 
+                        console.log(`Distance Matrix processed successfully. ${distanceMatrixData.length} pairs.`); 
+                    } else {
+                        distanceMatrixData = []; 
+                        console.log("Distance Matrix validation failed (message should be visible)."); 
+                    }
+                } catch (err) {
+                    distanceMatrixData = []; 
+                    showMessage(distanceMatrixErrorEl, `Error processing Distance Matrix CSV: ${err.message}`, true);
+                    hideMessage(distanceMatrixFileInfoEl); 
+                    console.error("Error in handleDistanceMatrixUpload (onload):", err); 
+                } finally { 
+                    updateDataValidationSummaryAfterProcessing(); 
+                    if (distanceMatrixFileEl) distanceMatrixFileEl.value = ''; 
+                    console.log("handleDistanceMatrixUpload onload finally block executed."); 
+                }
+            };
+            reader.onerror = (error) => { 
+                showMessage(distanceMatrixErrorEl, `Error reading file ${file.name}: ${error.target.error.name}`, true);
+                hideMessage(distanceMatrixFileInfoEl);
+                updateDataValidationSummaryAfterProcessing();
+                if (distanceMatrixFileEl) distanceMatrixFileEl.value = ''; 
+                console.error("FileReader onerror for Distance Matrix:", error); 
+            };
+            reader.readAsText(file);
+        }
+
+        function validateDistanceMatrix(matrix) { 
+            const headers = csvHeaders.distanceMatrix && csvHeaders.distanceMatrix.length > 0 
+                            ? csvHeaders.distanceMatrix 
+                            : (matrix.length > 0 ? Object.keys(matrix[0]) : []);
+
+            if (headers.length === 0) { 
+                 showMessage(distanceMatrixErrorEl, "Distance Matrix CSV: Could not determine headers. File might be empty or malformed.", true);
+                 hideMessage(distanceMatrixFileInfoEl);
+                 return false;
+            }
+            
+            if (!matrix || matrix.length === 0) { 
+                if (headers.length > 0 && matrix.length === 0) { 
+                     showMessage(distanceMatrixErrorEl, "Distance Matrix CSV: Headers parsed, but no valid data rows found (check column count consistency or if file is header-only).", true);
+                } else { 
+                    showMessage(distanceMatrixErrorEl, "Distance Matrix CSV is empty or could not be parsed.", true);
+                }
+                hideMessage(distanceMatrixFileInfoEl);
+                return false;
+            }
+            
+            const requiredCols = ['Store1', 'Store2'];
+            for (const col of requiredCols) {
+                if (!headers.includes(col)) { 
+                    showMessage(distanceMatrixErrorEl, `Missing required column in Distance Matrix CSV: ${col}`, true);
+                    hideMessage(distanceMatrixFileInfoEl);
+                    return false;
+                }
+            }
+             if (!headers.includes('Driving_distance') && !headers.includes('Driving_duration_minutes')) {
+                 showMessage(distanceMatrixErrorEl, `Distance Matrix CSV must contain either 'Driving_distance' or 'Driving_duration_minutes'.`, true);
+                 hideMessage(distanceMatrixFileInfoEl);
+                 return false;
+            }
+            const hasValidData = matrix.some(row => {
+                const hasDuration = row.Driving_duration_minutes && !isNaN(parseFloat(row.Driving_duration_minutes));
+                const hasDistance = row.Driving_distance && !isNaN(parseFloat(row.Driving_distance));
+                return hasDuration || hasDistance;
+            });
+            if (!hasValidData) {
+                showMessage(distanceMatrixErrorEl, "Distance Matrix CSV has required headers, but no valid numeric data found in 'Driving_distance' or 'Driving_duration_minutes' columns.", true);
+                hideMessage(distanceMatrixFileInfoEl);
+                return false;
+            }
+
+            return true; 
+        }
+        
+        // --- Core Routing Logic Functions ---
+        function groupVisitsByZone(allVisits, zoneColumnName) {
+            const groupedProblems = {}; 
+            allVisits.forEach(visit => {
+                const zone = visit.originalStoreData[zoneColumnName] || 'UNZONED'; 
+                const day = visit.dayOfWeek;
+                if (!groupedProblems[zone]) { 
+                    groupedProblems[zone] = { MO: [], TU: [], WE: [], TH: [], FR: [], SA: [], SU: [] };
+                }
+                groupedProblems[zone][day].push(visit);
+            });
+            return groupedProblems;
+        }
+        
+        function getOrCreateMerchandisersForZone(zoneKey, merchWeeklyStats, nextMerchCountersByZoneObj, config) {
+            let merchandisersInZone = Object.keys(merchWeeklyStats).filter(mId => merchWeeklyStats[mId].zone === zoneKey);
+            return merchandisersInZone; 
+        }
+        
+        function getViableStoresForPattern(patternStoreIds, availableVisitsToday) {
+            const result = [];
+            for (const storeId of patternStoreIds) {
+                const visit = availableVisitsToday.find(v => v.storeId === storeId && !v.isAssignedThisRun); 
+                if (visit) {
+                    result.push(visit); 
+                } else {
+                    return []; 
+                }
+            }
+            return result; 
+        }
+        
+        function buildUnassignedDailyRouteSegment(day, zoneKey, availableVisits, config, isLeftoverMode = false, minStopsForSegment) {
+            let currentRouteStops = []; 
+            let tempAvailableVisitsCopy = JSON.parse(JSON.stringify(availableVisits.filter(v => !v.isAssignedThisRouteAttempt))); 
+            
+            if (tempAvailableVisitsCopy.length === 0) return { routeObject: null, consumedVisitsActual: [], routePatternArray: [] };
+
+            let currentTimeOfDayMinutes = config.earliestStartTimeMinutes;
+            let currentRouteTravelMinutes = 0;
+            let currentRouteServiceMinutes = 0;
+            let currentRouteBreakMinutes = 0;
+            let currentRouteDistance = 0;
+            let workDoneSinceLastBreakOrStart = 0; 
+            let lastVisitedStoreInRoute = null; 
+            let consumedVisitsActual = []; 
+            let routePatternArray = []; 
+
+            let startStoreCopy = tempAvailableVisitsCopy.find(v => !v.isAssignedThisRouteAttempt); 
+            if (!startStoreCopy) return { routeObject: null, consumedVisitsActual: [], routePatternArray: [] };
+            
+            const startIndex = tempAvailableVisitsCopy.findIndex(v => v.uniqueVisitId === startStoreCopy.uniqueVisitId);
+            if (startIndex > -1) tempAvailableVisitsCopy.splice(startIndex, 1); 
+            
+            const originalStartVisit = availableVisits.find(v => v.uniqueVisitId === startStoreCopy.uniqueVisitId);
+            if (!originalStartVisit) {
+                 console.error("Original start visit not found for buildUnassignedDailyRouteSegment based on copy.");
+                 return { routeObject: null, consumedVisitsActual: [], routePatternArray: [] };
+            }
+            
+            consumedVisitsActual.push(originalStartVisit); 
+            routePatternArray.push(originalStartVisit.storeId);
+            currentRouteStops.push({
+                storeId: originalStartVisit.storeId, customer: originalStartVisit.customer, stopSequence: 1,
+                arrivalTime: minutesToTime(currentTimeOfDayMinutes), serviceDurationMinutes: originalStartVisit.visitDuration,
+                departureTime: minutesToTime(currentTimeOfDayMinutes + originalStartVisit.visitDuration),
+                travelToStopMinutes: 0, travelDistanceToStop: 0, type: 'Service',
+                originalStoreData: originalStartVisit.originalStoreData, uniqueVisitId: originalStartVisit.uniqueVisitId
+            });
+            currentTimeOfDayMinutes += originalStartVisit.visitDuration;
+            currentRouteServiceMinutes += originalStartVisit.visitDuration;
+            workDoneSinceLastBreakOrStart += originalStartVisit.visitDuration;
+            lastVisitedStoreInRoute = originalStartVisit;
+
+            while (routePatternArray.length < config.maxStops && tempAvailableVisitsCopy.length > 0) {
+                if (config.enableBreaks && workDoneSinceLastBreakOrStart >= config.workDurationBeforeBreak && 
+                    (currentRouteServiceMinutes + currentRouteTravelMinutes + currentRouteBreakMinutes) >= config.minRouteDurationForBreak) {
+                    if ((currentTimeOfDayMinutes + config.breakDuration) > (config.earliestStartTimeMinutes + config.maxRouteTime)) break; 
+                    currentRouteStops.push({ 
+                        storeId: "BREAK", customer: "N/A", stopSequence: routePatternArray.length + 1, 
+                        arrivalTime: minutesToTime(currentTimeOfDayMinutes), serviceDurationMinutes: config.breakDuration,
+                        departureTime: minutesToTime(currentTimeOfDayMinutes + config.breakDuration),
+                        travelToStopMinutes: 0, travelDistanceToStop: 0, type: 'Break'
+                    });
+                    currentTimeOfDayMinutes += config.breakDuration;
+                    currentRouteBreakMinutes += config.breakDuration;
+                    workDoneSinceLastBreakOrStart = 0; 
+                }
+
+                let bestNextStoreVisitCopy = null;
+                let bestTravelInfo = { durationMinutes: Infinity, distance: Infinity };
+                let bestNextStoreIndex = -1;
+
+                for(let i=0; i < tempAvailableVisitsCopy.length; i++) {
+                    const candidateVisitCopy = tempAvailableVisitsCopy[i];
+                    const travelInfo = getTravelInfo(lastVisitedStoreInRoute.storeId, candidateVisitCopy.storeId, config);
+                    
+                    if (travelInfo.durationMinutes <= config.maxPairTime) { 
+                        const potentialTotalTime = currentRouteServiceMinutes + currentRouteTravelMinutes + currentRouteBreakMinutes + travelInfo.durationMinutes + candidateVisitCopy.visitDuration;
+                        if (potentialTotalTime <= config.maxRouteTime) { 
+                            if (travelInfo.durationMinutes < bestTravelInfo.durationMinutes) { 
+                                bestTravelInfo = travelInfo;
+                                bestNextStoreVisitCopy = candidateVisitCopy;
+                                bestNextStoreIndex = i;
+                            }
+                        }
+                    }
+                }
+
+                if (bestNextStoreVisitCopy) { 
+                    tempAvailableVisitsCopy.splice(bestNextStoreIndex, 1); 
+                    const originalBestNextVisit = availableVisits.find(v => v.uniqueVisitId === bestNextStoreVisitCopy.uniqueVisitId);
+                     if (!originalBestNextVisit) {
+                         console.error("Original best next visit not found based on copy"); continue; 
+                    }
+                    consumedVisitsActual.push(originalBestNextVisit); 
+                    routePatternArray.push(originalBestNextVisit.storeId);
+                    currentRouteStops.push({
+                        storeId: originalBestNextVisit.storeId, customer: originalBestNextVisit.customer, 
+                        stopSequence: routePatternArray.length,
+                        arrivalTime: minutesToTime(currentTimeOfDayMinutes + bestTravelInfo.durationMinutes),
+                        serviceDurationMinutes: originalBestNextVisit.visitDuration,
+                        departureTime: minutesToTime(currentTimeOfDayMinutes + bestTravelInfo.durationMinutes + originalBestNextVisit.visitDuration),
+                        travelToStopMinutes: bestTravelInfo.durationMinutes, travelDistanceToStop: bestTravelInfo.distance, type: 'Service',
+                        originalStoreData: originalBestNextVisit.originalStoreData, uniqueVisitId: originalBestNextVisit.uniqueVisitId
+                    });
+                    currentTimeOfDayMinutes += bestTravelInfo.durationMinutes + originalBestNextVisit.visitDuration;
+                    currentRouteTravelMinutes += bestTravelInfo.durationMinutes;
+                    currentRouteServiceMinutes += originalBestNextVisit.visitDuration;
+                    workDoneSinceLastBreakOrStart += bestTravelInfo.durationMinutes + originalBestNextVisit.visitDuration;
+                    currentRouteDistance += bestTravelInfo.distance;
+                    lastVisitedStoreInRoute = originalBestNextVisit;
+                } else {
+                    break; 
+                }
+            }
+
+            if (routePatternArray.length >= minStopsForSegment) {
+                return {
+                    routeObject: {
+                        dayOfWeek: day, 
+                        primaryRouteFS: zoneKey, 
+                        stops: currentRouteStops,
+                        totalDurationMinutes: Math.round(currentRouteTravelMinutes + currentRouteServiceMinutes + currentRouteBreakMinutes),
+                        totalTravelMinutes: Math.round(currentRouteTravelMinutes), 
+                        totalServiceMinutes: Math.round(currentRouteServiceMinutes),
+                        totalBreakMinutes: Math.round(currentRouteBreakMinutes), 
+                        totalDistance: currentRouteDistance,
+                        pattern: routePatternArray, 
+                        isBaseCandidate: !isLeftoverMode 
+                    },
+                    consumedVisitsActual: consumedVisitsActual, 
+                    routePatternArray: routePatternArray
+                };
+            }
+            return { routeObject: null, consumedVisitsActual: [], routePatternArray: [] };
+        }
+
+        function assignRoutesToMerchandisers(unassignedRouteObjects, config, merchWeeklyStats, nextMerchCountersByZoneObj, allWeeklyVisitsList) {
+            let finalRoutes = []; 
+            let finalUnassignedRouteObjects = []; 
+
+            const dayOrderMap = {"FR":1, "SA":2, "MO":3, "TU":4, "WE":5, "TH":6, "SU":7};
+            unassignedRouteObjects.sort((a,b) => {
+                if (dayOrderMap[a.dayOfWeek] !== dayOrderMap[b.dayOfWeek]) {
+                    return dayOrderMap[a.dayOfWeek] - dayOrderMap[b.dayOfWeek];
+                }
+                if (a.primaryRouteFS !== b.primaryRouteFS) { 
+                    return a.primaryRouteFS.localeCompare(b.primaryRouteFS);
+                }
+                if (a.isBaseCandidate !== b.isBaseCandidate) { 
+                    return a.isBaseCandidate ? -1 : 1; 
+                }
+                return b.totalDurationMinutes - a.totalDurationMinutes; 
+            });
+
+            Object.values(merchWeeklyStats).forEach(mStat => {
+                mStat.dailyWorkTracker = mStat.dailyWorkTracker || {};
+                dayProcessingOrder.forEach(d => {
+                    mStat.dailyWorkTracker[d] = mStat.dailyWorkTracker[d] || { totalMinutes: 0, lastEndTimeMinutes: config.earliestStartTimeMinutes };
+                });
+                mStat.hasBuiltBaseToday = mStat.hasBuiltBaseToday || {}; 
+                 dayProcessingOrder.forEach(d => mStat.hasBuiltBaseToday[d] = mStat.hasBuiltBaseToday[d] || false);
+            });
+
+
+            for (const routeToAssign of unassignedRouteObjects) {
+                let allStopsStillAvailable = true;
+                for(const stop of routeToAssign.stops.filter(s => s.type !== 'Break')) { 
+                    const globalVisit = allWeeklyVisitsList.find(v => v.uniqueVisitId === stop.uniqueVisitId);
+                    if (!globalVisit || globalVisit.isAssignedThisRun) { 
+                        allStopsStillAvailable = false;
+                        break;
+                    }
+                }
+                if (!allStopsStillAvailable) {
+                    console.log(`Skipping route object for ${routeToAssign.primaryRouteFS} on ${routeToAssign.dayOfWeek} as its visits are already assigned.`);
+                    continue; 
+                }
+
+                const targetZone = routeToAssign.primaryRouteFS;
+                const routeDay = routeToAssign.dayOfWeek;
+                let assignedThisRoute = false;
+
+                let existingMerchsInZone = Object.keys(merchWeeklyStats).filter(mId => merchWeeklyStats[mId].zone === targetZone);
+                let candidateMerchandisers = existingMerchsInZone.filter(mId => {
+                     const stats = merchWeeklyStats[mId];
+                     if (!stats.dailyWorkTracker[routeDay]) { 
+                         stats.dailyWorkTracker[routeDay] = { totalMinutes: 0, lastEndTimeMinutes: config.earliestStartTimeMinutes };
+                     }
+                     const dailyTimeAlreadyWorked = stats.dailyWorkTracker[routeDay].totalMinutes;
+                     return (dailyTimeAlreadyWorked + routeToAssign.totalDurationMinutes <= config.maxRouteTime) &&
+                            (stats.totalWeeklyMinutes + routeToAssign.totalDurationMinutes <= (config.targetWeeklyHours * 60 * 1.2)); 
+                 });
+
+                candidateMerchandisers.sort((aId, bId) => {
+                    const statsA = merchWeeklyStats[aId];
+                    const statsB = merchWeeklyStats[bId];
+
+                    if (config.minDaysOnSameRoute > 0 && routeToAssign.isBaseCandidate && !statsA.hasBuiltBaseToday[routeDay] && !statsB.hasBuiltBaseToday[routeDay]) {
+                        const patternA = statsA.currentStickyPattern;
+                        const patternB = statsB.currentStickyPattern;
+                        const isMatchA = patternA && patternA.zone === targetZone && patternA.daysCompleted < config.minDaysOnSameRoute && JSON.stringify(patternA.pattern) === JSON.stringify(routeToAssign.pattern);
+                        const isMatchB = patternB && patternB.zone === targetZone && patternB.daysCompleted < config.minDaysOnSameRoute && JSON.stringify(patternB.pattern) === JSON.stringify(routeToAssign.pattern);
+
+                        if (isMatchA && !isMatchB) return -1; 
+                        if (!isMatchA && isMatchB) return 1;  
+                    }
+                    if (routeToAssign.isBaseCandidate) {
+                        if (!statsA.hasBuiltBaseToday[routeDay] && statsB.hasBuiltBaseToday[routeDay]) return -1;
+                        if (statsA.hasBuiltBaseToday[routeDay] && !statsB.hasBuiltBaseToday[routeDay]) return 1;
+                    }
+                    return statsA.totalWeeklyMinutes - statsB.totalWeeklyMinutes;
+                });
+                
+                for (const merchId of candidateMerchandisers) {
+                    const merchStats = merchWeeklyStats[merchId];
+                    const dailyTimeAlreadyWorked = merchStats.dailyWorkTracker[routeDay].totalMinutes;
+                    if ((dailyTimeAlreadyWorked + routeToAssign.totalDurationMinutes > config.maxRouteTime) ||
+                        (merchStats.totalWeeklyMinutes + routeToAssign.totalDurationMinutes > (config.targetWeeklyHours * 60 * 1.2))) {
+                        continue; 
+                    }
+                    if (routeToAssign.isBaseCandidate && merchStats.hasBuiltBaseToday[routeDay]) {
+                        const isContinuingOwnSticky = merchStats.currentStickyPattern &&
+                                                  merchStats.currentStickyPattern.zone === targetZone &&
+                                                  merchStats.currentStickyPattern.daysCompleted < config.minDaysOnSameRoute &&
+                                                  JSON.stringify(merchStats.currentStickyPattern.pattern) === JSON.stringify(routeToAssign.pattern);
+                        if (!isContinuingOwnSticky) continue; 
+                    }
+
+
+                    routeToAssign.merchId = merchId; 
+                    const routeNumKey = `${merchId}-${routeDay}-${targetZone}`;
+                    merchandiserRouteCounters[routeNumKey] = (merchandiserRouteCounters[routeNumKey] || 0) + 1;
+                    routeToAssign.routeNum = merchandiserRouteCounters[routeNumKey];
+                    
+                    addRouteToGlobalResults(routeToAssign, finalRoutes, zoneDayRouteCounters); 
+                    
+                    let isStickyContinuation = false;
+                    let newStickyPattern = null;
+
+                    if (merchStats.currentStickyPattern && 
+                        merchStats.currentStickyPattern.zone === targetZone &&
+                        merchStats.currentStickyPattern.daysCompleted < config.minDaysOnSameRoute &&
+                        JSON.stringify(merchStats.currentStickyPattern.pattern) === JSON.stringify(routeToAssign.pattern)) {
+                        isStickyContinuation = true;
+                    } else if (routeToAssign.isBaseCandidate && config.minDaysOnSameRoute > 0 && !merchStats.hasBuiltBaseToday[routeDay]) {
+                        newStickyPattern = routeToAssign.pattern;
+                    }
+                    
+                    updateMerchStatsForRoute(merchId, routeToAssign, routeDay, merchWeeklyStats, isStickyContinuation, config, newStickyPattern, !routeToAssign.isBaseCandidate);
+                    
+                    markVisitsAsAssigned(routeToAssign.stops.filter(s=>s.type !== 'Break').map(s => allWeeklyVisitsList.find(v => v.uniqueVisitId === s.uniqueVisitId)).filter(Boolean), allWeeklyVisitsList);
+                    routeToAssign.isAssigned = true; 
+                    assignedThisRoute = true;
+                    break; 
+                }
+
+                if (!assignedThisRoute) {
+                    let activeMerchsInZoneCount = Object.keys(merchWeeklyStats).filter(mId => merchWeeklyStats[mId].zone === targetZone && merchWeeklyStats[mId].totalStops > 0).length;
+                    if (activeMerchsInZoneCount < config.maxMerchsPerZone) { 
+                        nextMerchCountersByZoneObj[targetZone] = (nextMerchCountersByZoneObj[targetZone] || 0) + 1;
+                        const newMerchId = `Merch_${sanitizeZoneNameForId(targetZone)}_${String(nextMerchCountersByZoneObj[targetZone]).padStart(2, '0')}`;
+                        
+                        if (!merchWeeklyStats[newMerchId]) {
+                             merchWeeklyStats[newMerchId] = {
+                                totalWeeklyMinutes: 0, serviceMinutes:0, travelMinutes:0, breakMinutes:0, totalDistance:0, totalStops:0,
+                                daysWorked: new Set(), zone: targetZone, 
+                                currentStickyPattern: null, hasBuiltBaseToday: {}, dailyWorkTracker: {}
+                            };
+                            dayProcessingOrder.forEach(d => { 
+                                merchWeeklyStats[newMerchId].hasBuiltBaseToday[d] = false;
+                                merchWeeklyStats[newMerchId].dailyWorkTracker[d] = { totalMinutes: 0, lastEndTimeMinutes: config.earliestStartTimeMinutes };
+                            });
+                        }
+                        const merchStats = merchWeeklyStats[newMerchId];
+                        const dailyTimeAlreadyWorked = merchStats.dailyWorkTracker[routeDay].totalMinutes; 
+
+                        if ((dailyTimeAlreadyWorked + routeToAssign.totalDurationMinutes <= config.maxRouteTime) &&
+                            (merchStats.totalWeeklyMinutes + routeToAssign.totalDurationMinutes <= (config.targetWeeklyHours * 60 * 1.2))) {
+                            
+                            routeToAssign.merchId = newMerchId;
+                            const routeNumKey = `${newMerchId}-${routeDay}-${targetZone}`;
+                            merchandiserRouteCounters[routeNumKey] = (merchandiserRouteCounters[routeNumKey] || 0) + 1;
+                            routeToAssign.routeNum = merchandiserRouteCounters[routeNumKey];
+
+                            addRouteToGlobalResults(routeToAssign, finalRoutes, zoneDayRouteCounters);
+                            let newStickyPattern = (routeToAssign.isBaseCandidate && config.minDaysOnSameRoute > 0 && !merchStats.hasBuiltBaseToday[routeDay]) ? routeToAssign.pattern : null;
+                            updateMerchStatsForRoute(newMerchId, routeToAssign, routeDay, merchWeeklyStats, false, config, newStickyPattern, !routeToAssign.isBaseCandidate);
+                            
+                            markVisitsAsAssigned(routeToAssign.stops.filter(s=>s.type !== 'Break').map(s => allWeeklyVisitsList.find(v => v.uniqueVisitId === s.uniqueVisitId)).filter(Boolean), allWeeklyVisitsList);
+                            routeToAssign.isAssigned = true;
+                            assignedThisRoute = true;
+                        } else {
+                             finalUnassignedRouteObjects.push(routeToAssign); 
+                        }
+                    } else {
+                         finalUnassignedRouteObjects.push(routeToAssign); 
+                    }
+                }
+            }
+            return {finalRoutes, finalMerchStats: merchWeeklyStats, finalUnassignedRouteObjects}; 
+        }
+
+        function addRouteToGlobalResults(routeObject, allGeneratedRoutesList, zoneDayRouteCountersObj) {
+            const zoneDayKey = `${sanitizeZoneNameForId(routeObject.primaryRouteFS)}_${routeObject.dayOfWeek}`; 
+            zoneDayRouteCountersObj[zoneDayKey] = (zoneDayRouteCountersObj[zoneDayKey] || 0) + 1;
+            routeObject.displayRouteNum = zoneDayRouteCountersObj[zoneDayKey]; 
+            allGeneratedRoutesList.push(routeObject);
+        }
+
+        function markVisitsAsAssigned(consumedVisits, allWeeklyVisitsList) {
+            consumedVisits.forEach(cv => {
+                if (!cv) return; 
+                const globalVisit = allWeeklyVisitsList.find(v => v.uniqueVisitId === cv.uniqueVisitId);
+                if (globalVisit) {
+                    globalVisit.isAssignedThisRun = true; 
+                } else {
+                    console.error("Consumed visit not found in global list for marking:", cv);
+                }
+            });
+        }
+
+
+        function updateMerchStatsForRoute(merchId, routeObject, day, merchWeeklyStatsObj, isStickyContinuation, config, newStickyPattern = null, isLeftoverRoute = false) {
+            const stats = merchWeeklyStatsObj[merchId];
+            stats.totalWeeklyMinutes += routeObject.totalDurationMinutes;
+            stats.serviceMinutes += routeObject.totalServiceMinutes;
+            stats.travelMinutes += routeObject.totalTravelMinutes;
+            stats.breakMinutes += routeObject.totalBreakMinutes;
+            stats.totalDistance += routeObject.totalDistance;
+            stats.totalStops += routeObject.stops.filter(s => s.type !== 'Break').length;
+            stats.daysWorked.add(day); 
+            
+            if(!stats.dailyWorkTracker) stats.dailyWorkTracker = {};
+            if(!stats.dailyWorkTracker[day]) {
+                stats.dailyWorkTracker[day] = { totalMinutes: 0, lastEndTimeMinutes: config.earliestStartTimeMinutes};
+            }
+            
+            stats.dailyWorkTracker[day].totalMinutes += routeObject.totalDurationMinutes;
+             if(routeObject.stops.length > 0){ 
+                 const lastStopInRoute = routeObject.stops[routeObject.stops.length-1];
+                 stats.dailyWorkTracker[day].lastEndTimeMinutes = timeToMinutes(lastStopInRoute.departureTime);
+             }
+
+            if (!isLeftoverRoute) { 
+                if (isStickyContinuation) {
+                    if (stats.currentStickyPattern) { 
+                        stats.currentStickyPattern.daysCompleted++;
+                        if (stats.currentStickyPattern.daysCompleted >= config.minDaysOnSameRoute) {
+                            stats.currentStickyPattern = null; 
+                        }
+                        if (!stats.hasBuiltBaseToday[day]) {
+                             stats.hasBuiltBaseToday[day] = true;
+                        }
+                    }
+                } else if (newStickyPattern && config.minDaysOnSameRoute > 0) { 
+                    stats.currentStickyPattern = {
+                        pattern: newStickyPattern,
+                        daysCompleted: 1,
+                        problemKey: routeObject.primaryRouteFS, 
+                        zone: routeObject.primaryRouteFS 
+                    };
+                    stats.hasBuiltBaseToday[day] = true; 
+                } else if (routeObject.isBaseCandidate) { 
+                    stats.hasBuiltBaseToday[day] = true; 
+                }
+            }
+        }
+
+        function selectStartStoreForNewRoute(merchId, candidateVisits, merchWeeklyStatsObj, config, isNewBaseAttempt) {
+            if (!candidateVisits || candidateVisits.length === 0) return null;
+            
+            const merchStats = merchWeeklyStatsObj[merchId];
+            if (isNewBaseAttempt && merchStats && merchStats.previouslyStickyPatternInfo && 
+                merchStats.previouslyStickyPatternInfo.zone === (candidateVisits[0] ? candidateVisits[0].zone : null) && 
+                merchStats.previouslyStickyPatternInfo.dayBroken === lastRunConfig.currentProcessingDay) { 
+                for (const storeId of merchStats.previouslyStickyPatternInfo.pattern) {
+                    const foundVisit = candidateVisits.find(v => v.storeId === storeId && !v.isAssignedThisRun); 
+                    if (foundVisit) {
+                        console.log(`Merch ${merchId} starting new base route with store ${foundVisit.storeId} from previous pattern (broken today).`);
+                        return foundVisit;
+                    }
+                }
+            }
+            
+            return candidateVisits.find(v => !v.isAssignedThisRun) || null; 
+        }
+        
+        function validateStoreMatrixConsistency(config) { 
+            if (config.matrixSource !== 'upload') return true; 
+            
+            const storeMasterStoreIdsInActiveZones = new Set();
+            storeMasterData.forEach(store => {
+                const zone = store[config.optimizationZoneColumnName];
+                if (zone && String(zone).trim() !== '' && String(zone).trim() !== 'UNZONED') {
+                    storeMasterStoreIdsInActiveZones.add(store['Store Number WF']);
+                }
+            });
+
+            const matrixStoreIds = new Set();
+            distanceMatrixData.forEach(pair => {
+                matrixStoreIds.add(pair.store1);
+                matrixStoreIds.add(pair.store2);
+            });
+
+            let missingInMatrix = [];
+            storeMasterStoreIdsInActiveZones.forEach(smId => {
+                if (!matrixStoreIds.has(smId)) {
+                    missingInMatrix.push(smId);
+                }
+            });
+
+            if (missingInMatrix.length > 0) {
+                const errorMsg = `Data Consistency Error: The following store IDs from Store Master are in active zones but missing from the uploaded Distance Matrix: ${missingInMatrix.join(', ')}. Please ensure all active stores are included in the matrix or use API calculation.`;
+                showMessage(optimizationErrorEl, errorMsg, true);
+                if(progressPercentEl) updateProgress("Error", progressPercentEl.textContent || 0, "Data Consistency Failed");
+                return false;
+            }
+            return true; 
+        }
+
+        function updateProgress(status, percent, task) {
+            if(progressStatusEl) progressStatusEl.textContent = status;
+            if(progressPercentEl) progressPercentEl.textContent = percent;
+            if(progressCurrentTaskEl) progressCurrentTaskEl.textContent = task;
+        }
+
+        function assignVisitDaysForAllStores(sMasterData, config) {
+            const dayCodes = ["SU", "MO", "TU", "WE", "TH", "FR", "SA"]; 
+            let allVisits = []; 
+            const zoneColumn = config.optimizationZoneColumnName; 
+
+            sMasterData.forEach(store => {
+                let weeklyVisits = parseInt(store.WeeklyVisits);
+                if (isNaN(weeklyVisits) || weeklyVisits <= 0) return; 
+
+                let storeZone = store[zoneColumn] || 'UNZONED'; 
+                let storeArea = store['Area'] || null; 
+
+                let allowedDays = (store['Merch Days'] || "").toUpperCase().split(/[\s,-]+/).filter(d => dayCodes.includes(d));
+                let visitDays = []; 
+                
+                let currentConfigDefault3 = Array.isArray(config.default3Visits) ? config.default3Visits : (config.default3Visits || "").split(/[\s,-]+/).filter(Boolean);
+                let currentConfigDefault4 = Array.isArray(config.default4Visits) ? config.default4Visits : (config.default4Visits || "").split(/[\s,-]+/).filter(Boolean);
+
+                if (store['Customer'] && store['Customer'].toUpperCase() === 'WALMART') {
+                    if (weeklyVisits === 4) { 
+                        if (allowedDays.includes("FR")) visitDays.push("FR");
+                        if (allowedDays.includes("SA") && visitDays.length < weeklyVisits) visitDays.push("SA");
+                        
+                        const moThBlock = ["MO", "TU", "WE", "TH"];
+                        let availableMoTh = moThBlock.filter(d => allowedDays.includes(d) && !visitDays.includes(d));
+                        
+                        for (let i = 0; i < availableMoTh.length && visitDays.length < weeklyVisits; i++) {
+                            visitDays.push(availableMoTh[i]);
+                        }
+
+                        if (visitDays.length < weeklyVisits) {
+                            let otherAllowedDays = allowedDays.filter(d => !visitDays.includes(d));
+                            for (let i = 0; i < otherAllowedDays.length && visitDays.length < weeklyVisits; i++) {
+                                visitDays.push(otherAllowedDays[i]);
+                            }
+                        }
+                         if (visitDays.length < weeklyVisits) { 
+                             console.warn(`Store ${store['Store Number WF']} (Walmart) requires ${weeklyVisits} visits but could only schedule ${visitDays.length} based on Merch Days: ${allowedDays.join(',')}`);
+                         }
+
+                    } else if (allowedDays.length >= weeklyVisits) { 
+                        if (weeklyVisits === 1 && allowedDays.length > 0) visitDays = [allowedDays[0]]; 
+                        else if (weeklyVisits === 2 && allowedDays.includes('MO') && allowedDays.includes('TH')) visitDays = ['MO', 'TH'];
+                        else if (weeklyVisits === 2 && allowedDays.includes('TU') && allowedDays.includes('FR')) visitDays = ['TU', 'FR'];
+                        else if (weeklyVisits === 3 && allowedDays.includes('MO') && allowedDays.includes('WE') && allowedDays.includes('FR')) visitDays = ['MO', 'WE', 'FR'];
+                        else { 
+                            visitDays = allowedDays.slice(0, weeklyVisits);
+                        }
+                    }  else if (allowedDays.length > 0 && allowedDays.length < weeklyVisits) { 
+                        visitDays = [...allowedDays]; 
+                         console.warn(`Store ${store['Store Number WF']} (Walmart) requires ${weeklyVisits} visits but only ${allowedDays.length} merch days are specified. Scheduling for all specified days: ${visitDays.join(',')}. Deficit of ${weeklyVisits - visitDays.length} visits.`);
+                    } else { 
+                         console.warn(`Store ${store['Store Number WF']} (Walmart) requires ${weeklyVisits} visits but has no Merch Days specified. It might not be scheduled.`);
+                    }
+                } else { 
+                    if (allowedDays.length === 0) { 
+                        let defaultDaysToUse = [];
+                        if (weeklyVisits === 3 && currentConfigDefault3.length >= 3) defaultDaysToUse = currentConfigDefault3.slice(0,3);
+                        else if (weeklyVisits === 4 && currentConfigDefault4.length >= 4) defaultDaysToUse = currentConfigDefault4.slice(0,4);
+                        else if (weeklyVisits === 1) defaultDaysToUse = currentConfigDefault3.length > 0 ? [currentConfigDefault3[0]] : (currentConfigDefault4.length > 0 ? [currentConfigDefault4[0]] : []);
+                        
+                        if (defaultDaysToUse.length > 0 && defaultDaysToUse.length >= weeklyVisits) {
+                             visitDays = defaultDaysToUse.slice(0, weeklyVisits);
+                        } else { 
+                             let availableWeekdays = ["MO", "TU", "WE", "TH", "FR"];
+                             for(let i=0; i < availableWeekdays.length && visitDays.length < weeklyVisits; i++){
+                                 visitDays.push(availableWeekdays[i]);
+                             }
+                             console.warn(`Store ${store['Store Number WF']} (${store['Customer']}) using generic fallback days due to insufficient default/allowed days for ${weeklyVisits} visits.`);
+                        }
+                    } else if (allowedDays.length >= weeklyVisits) { 
+                        visitDays = allowedDays.slice(0, weeklyVisits); 
+                    } else { 
+                        visitDays = [...allowedDays]; 
+                         console.warn(`Store ${store['Store Number WF']} (${store['Customer']}) requires ${weeklyVisits} visits but only ${allowedDays.length} merch days are specified: ${allowedDays.join(',')}. Scheduling for all specified days. Deficit of ${weeklyVisits - visitDays.length} visits.`);
+                    }
+                }
+                
+                visitDays.forEach(day => {
+                    allVisits.push({
+                        storeId: store['Store Number WF'],
+                        customer: store['Customer'],
+                        dayOfWeek: day,
+                        visitDuration: parseInt(store['Visit Duration Mins']) || 60, 
+                        problemKey: storeZone, 
+                        zone: storeZone,   
+                        area: storeArea,   
+                        originalStoreData: store, 
+                        uniqueVisitId: `${store['Store Number WF']}-${day}-${Math.random().toString(36).substr(2, 9)}`, 
+                        isAssignedThisRun: false 
+                    });
+                });
+            });
+            return allVisits;
+        }
+        
+        function getTravelInfo(fromStoreId, toStoreId, config) {
+            if (!fromStoreId) return { durationMinutes: 0, distance: 0 }; 
+
+            if (config.matrixSource === 'upload' && distanceMatrixData.length > 0) {
+                const pair = distanceMatrixData.find(p => 
+                    (p.store1 === fromStoreId && p.store2 === toStoreId) || 
+                    (p.store1 === toStoreId && p.store2 === fromStoreId) 
+                );
+                if (pair) {
+                    return { durationMinutes: pair.durationSeconds / 60, distance: pair.distanceMiles };
+                }
+                 console.warn(`Matrix pair not found for ${fromStoreId}-${toStoreId}. Attempting Haversine.`); 
+            }
+
+            const storeA = storeMasterData.find(s => s['Store Number WF'] === fromStoreId);
+            const storeB = storeMasterData.find(s => s['Store Number WF'] === toStoreId);
+
+            if (storeA && storeB && storeA.Latitude && storeA.Longitude && storeB.Latitude && storeB.Longitude) {
+                const lat1 = parseFloat(storeA.Latitude);
+                const lon1 = parseFloat(storeA.Longitude);
+                const lat2 = parseFloat(storeB.Latitude);
+                const lon2 = parseFloat(storeB.Longitude);
+                
+                const R = 3959; 
+                const dLat = (lat2 - lat1) * Math.PI / 180;
+                const dLon = (lon2 - lon1) * Math.PI / 180;
+                const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+                          Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+                          Math.sin(dLon / 2) * Math.sin(dLon / 2);
+                const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+                const geoDistance = R * c; 
+                
+                let speed = geoDistance > config.distanceThreshold ? config.highwaySpeed : config.citySpeed;
+                if (speed <= 0 || isNaN(speed)) speed = 30; 
+                let durationMinutes = (geoDistance / speed) * 60; 
+
+                if (config.useTrafficData) { 
+                    durationMinutes *= (1 + (Math.random() * 0.2)); 
+                }
+                return { durationMinutes: Math.round(durationMinutes), distance: parseFloat(geoDistance.toFixed(2)) };
+            }
+            
+            console.warn(`Could not calculate travel between ${fromStoreId} and ${toStoreId} (missing lat/lon or store not found). Using default high travel time.`);
+            return { durationMinutes: config.maxPairTime + 1, distance: 100 }; 
+        }
+        
+        // --- NEW/MODIFIED: Function to assign final, sequential route IDs ---
+        function assignFinalRouteIDs(generatedRoutes, config) {
+            console.log("Assigning final sequential route IDs...");
+            if (!generatedRoutes || generatedRoutes.length === 0) {
+                return generatedRoutes;
+            }
+
+            const routesGroupedByZone = {};
+            // Group all generated daily routes by their zone
+            generatedRoutes.forEach(route => {
+                const zoneKey = route.primaryRouteFS; // primaryRouteFS is the zone name
+                if (!routesGroupedByZone[zoneKey]) {
+                    routesGroupedByZone[zoneKey] = [];
+                }
+                routesGroupedByZone[zoneKey].push(route);
+            });
+
+            // For each zone, find unique stop sequences and assign sequential IDs
+            for (const zoneKey in routesGroupedByZone) {
+                const dailyInstancesInZone = routesGroupedByZone[zoneKey];
+                const sequenceToRouteIdMap = new Map();
+                let routeCounter = 1;
+
+                // Sort instances to have a consistent order for assigning R01, R02...
+                // We'll rank by frequency, then number of stops, then distance.
+                const uniqueSequences = {}; 
+                 dailyInstancesInZone.forEach(instance => {
+                    const stopSequence = instance.stops.filter(s => s.type !== 'Break').map(s => s.storeId);
+                    const sequenceString = stopSequence.join(',');
+        
+                    if (!uniqueSequences[sequenceString]) {
+                        let robustSequenceDistance = 0;
+                        if(stopSequence.length > 1) {
+                            for(let i=0; i < stopSequence.length - 1; i++){
+                                const travelInfo = getTravelInfo(stopSequence[i], stopSequence[i+1], config);
+                                robustSequenceDistance += travelInfo.distance;
+                            }
+                        }
+                        uniqueSequences[sequenceString] = {
+                            sequence: stopSequence,
+                            instances: [],
+                            totalDistance: parseFloat(robustSequenceDistance.toFixed(2)),
+                            numStops: stopSequence.length,
+                            frequency: 0
+                        };
+                    }
+                    uniqueSequences[sequenceString].frequency++;
+                    uniqueSequences[sequenceString].instances.push(instance);
+                });
+
+                let sortedVariations = Object.values(uniqueSequences);
+                sortedVariations.sort((a, b) => {
+                    if (b.frequency !== a.frequency) return b.frequency - a.frequency;
+                    if (b.numStops !== a.numStops) return b.numStops - a.numStops;
+                    return a.totalDistance - b.totalDistance;
+                });
+                
+                // Assign new sequential IDs
+                sortedVariations.forEach(variation => {
+                    const newRouteID = `${sanitizeZoneNameForId(zoneKey)}_R${String(routeCounter).padStart(2, '0')}`;
+                    sequenceToRouteIdMap.set(variation.sequence.join(','), newRouteID);
+                    routeCounter++;
+                });
+
+                // Apply the new finalRouteID to all daily instances
+                dailyInstancesInZone.forEach(instance => {
+                    const sequenceString = instance.stops.filter(s => s.type !== 'Break').map(s => s.storeId).join(',');
+                    instance.finalRouteID = sequenceToRouteIdMap.get(sequenceString);
+                });
+            }
+
+            console.log("Final route IDs assigned.");
+            return generatedRoutes;
+        }
+
+
+        // --- Display Results Function ---
+        let allStopsForSchedule = []; 
+
+        function displayResults(generatedRoutes, sMasterData, config, finalMerchWeeklyStats, unassignedVisitsData) { 
+            resultsSummaryEl.innerHTML = '';
+            dailyRoutesTableBodyEl.innerHTML = '';
+            weeklyRouteSummaryTableBodyEl.innerHTML = ''; 
+            weeklyContextStopLogTableBodyEl.innerHTML = ''; 
+            weeklyOverviewTableBodyEl.innerHTML = '';
+            storeScheduleTableBodyEl.innerHTML = '';
+            workloadTableBodyEl.innerHTML = '';
+            augmentedStoreMasterTableBodyEl.innerHTML = '';
+            augmentedStoreMasterTableHeadEl.innerHTML = ''; 
+            unassignedVisitsTableBodyEl.innerHTML = '';
+            zonePerformanceTableBodyEl.innerHTML = ''; 
+            fleetWeeklySummaryTableBodyEl.innerHTML = ''; 
+            runInputsTableBodyEl.innerHTML = ''; 
+            excelExportData = {}; 
+
+            // --- 1. Prepare Data for Run Inputs Tab & Excel ---
+            const runInputsData = []; 
+            const inputParamsToShow = { 
+                "Run Name": config.runName,
+                "Optimization Zone Column": config.optimizationZoneColumnName,
+                "Min Days on Same Route Pattern": config.minDaysOnSameRoute,
+                "Earliest Daily Start Time": config.earliestStartTime,
+                "Use Traffic Data": config.useTrafficData ? "Yes" : "No",
+                "Min Stops per Primary Route": config.minStops,
+                "Min Stops for Leftover Route": config.minStopsForLeftoverRoute, 
+                "Max Stops per Route (All Types)": config.maxStops,
+                "Max Daily Route Time (min)": config.maxRouteTime,
+                "Max Travel Between Stops (min)": config.maxPairTime,
+                "Cost per Hour ($)": config.costPerHour.toFixed(2),
+                "Cost per Mile ($)": config.costPerMile.toFixed(2),
+                "Enable Breaks": config.enableBreaks ? "Yes" : "No",
+                "Break Duration (min)": config.enableBreaks ? config.breakDuration : "N/A",
+                "Work Before Break (min)": config.enableBreaks ? config.workDurationBeforeBreak : "N/A",
+                "Min Work Day for Break (min)": config.enableBreaks ? config.minRouteDurationForBreak : "N/A",
+                "Break Payment": config.enableBreaks ? config.breakPayment : "N/A",
+                "Target Weekly Hours per Merch": config.targetWeeklyHours,
+                "Soft Min Weekly Hours per Merch": config.softMinWeeklyHours,
+                "Max Merchs per Zone": config.maxMerchsPerZone === Infinity ? "Unlimited" : config.maxMerchsPerZone,
+                "Matrix Source": config.matrixSource,
+                "City Speed (mph) for Matrix Calc": config.matrixSource === 'upload' ? config.citySpeed : "N/A", 
+                "Highway Speed (mph) for Matrix Calc": config.matrixSource === 'upload' ? config.highwaySpeed : "N/A",
+                "Distance Threshold for Hwy (miles)": config.matrixSource === 'upload' ? config.distanceThreshold : "N/A",
+                "Default for 3 Visits/Week": Array.isArray(config.default3Visits) ? config.default3Visits.join('-') : config.default3Visits,
+                "Default for 4 Visits/Week": Array.isArray(config.default4Visits) ? config.default4Visits.join('-') : config.default4Visits,
+                "Store Master File": config.storeMasterFileName || "N/A",
+                "Store Master Columns Detected": csvHeaders.storeMaster ? csvHeaders.storeMaster.join(', ') : "N/A",
+                "Distance Matrix File": config.distanceMatrixFileName || "N/A"
+            };
+            
+            for (const [key, value] of Object.entries(inputParamsToShow)) {
+                const row = `<tr><td>${key}</td><td>${value}</td></tr>`;
+                runInputsTableBodyEl.innerHTML += row;
+                runInputsData.push({ Parameter: key, Value: value }); 
+            }
+            excelExportData['Run Inputs'] = runInputsData;
+
+            // --- 2. Prepare Data for Detailed Stop Log Tab & Excel ---
+            const dailyRoutesTableHeadEl = document.getElementById('dailyRoutesTable').getElementsByTagName('thead')[0].getElementsByTagName('tr')[0];
+            dailyRoutesTableHeadEl.innerHTML = `
+                <th data-sortable="true" data-column="0">Stop ID</th>
+                <th data-sortable="true" data-column="1">Route ID</th>
+                <th data-sortable="true" data-column="2">Assigned Merch. ID</th>
+                <th data-sortable="true" data-column="3">Store Number WF</th>
+                <th data-sortable="true" data-column="4" data-type="number">Stop Seq.</th>
+                <th data-sortable="true" data-column="5">Arrival</th>
+                <th data-sortable="true" data-column="6" data-type="number">Service (min)</th>
+                <th data-sortable="true" data-column="7">Departure</th>
+                <th data-sortable="true" data-column="8" data-type="number">Travel to Stop (min)</th>
+                <th data-sortable="true" data-column="9" data-type="number">Travel Dist. (miles)</th>
+                <th data-sortable="false">Stop Type</th>
+                <th data-sortable="true" data-column="11">Day Of Week</th>`;
+
+            const dailyRoutesExportData = [];
+            let totalWeeklyStoreVisitsCalculated = 0; 
+            generatedRoutes.sort((a,b) => a.finalRouteID.localeCompare(b.finalRouteID) || dayProcessingOrder.indexOf(a.dayOfWeek) - dayProcessingOrder.indexOf(b.dayOfWeek));
+
+            generatedRoutes.forEach(route => {
+                const routeID = route.finalRouteID;
+                const routeStartTime = route.stops.length > 0 ? route.stops[0].arrivalTime : 'N/A';
+                const routeEndTime = route.stops.length > 0 ? route.stops[route.stops.length -1].departureTime : 'N/A';
+                const summaryRowHTML = `<tr class="route-summary-row">
+                    <td colspan="2"><strong>Route: ${routeID}</strong></td>
+                    <td>${route.merchId}</td> <td>${route.dayOfWeek}</td>
+                    <td>${route.stops.filter(s => s.type !== 'Break').length} stops</td>
+                    <td colspan="2">Start: ${routeStartTime} End: ${routeEndTime}</td>
+                    <td>Total: ${route.totalDurationMinutes} min</td> <td>Travel: ${route.totalTravelMinutes} min</td>
+                    <td>Dist: ${route.totalDistance.toFixed(1)} mi</td>
+                    <td colspan="2">Service: ${route.totalServiceMinutes} min</td>
+                </tr>`;
+                dailyRoutesTableBodyEl.innerHTML += summaryRowHTML;
+
+                route.stops.forEach(stop => {
+                    const stopId = `${routeID}_S${String(stop.stopSequence).padStart(2, '0')}`; 
+                    const dailyRowHTML = `<tr>
+                        <td>${stopId}</td><td>${routeID}</td><td>${route.merchId}</td><td>${stop.storeId}</td><td>${stop.stopSequence}</td> 
+                        <td>${stop.arrivalTime}</td><td>${stop.serviceDurationMinutes}</td><td>${stop.departureTime}</td>
+                        <td>${stop.travelToStopMinutes}</td><td>${stop.travelDistanceToStop !== undefined ? stop.travelDistanceToStop.toFixed(1) : 'N/A'}</td>
+                        <td>${stop.type || 'Service'}</td><td>${route.dayOfWeek}</td>
+                    </tr>`;
+                    dailyRoutesTableBodyEl.innerHTML += dailyRowHTML; 
+                    dailyRoutesExportData.push({
+                        "Stop_ID": stopId, "Route_ID": routeID, "Assigned_Merchandiser_ID": route.merchId, 
+                        "Store_Number_WF": stop.storeId, "Day_Of_Week_Serviced": route.dayOfWeek, "Stop_Sequence": stop.stopSequence,
+                        "Arrival_Time": stop.arrivalTime, "Service_Duration_Mins": stop.serviceDurationMinutes,
+                        "Departure_Time": stop.departureTime, "Travel_Time_To_This_Stop_Mins": stop.travelToStopMinutes,
+                        "Travel_Distance_To_Stop_Miles": stop.travelDistanceToStop !== undefined ? stop.travelDistanceToStop.toFixed(1) : '',
+                        "Stop_Type": stop.type || 'Service'
+                    });
+                    if (stop.type !== 'Break') { 
+                        totalWeeklyStoreVisitsCalculated++;
+                    }
+                });
+            });
+            excelExportData['Detailed Stop Log'] = dailyRoutesExportData;
+            
+            // --- 2.5 RENAMED TAB: Weekly Route Summary ---
+            const weeklyRouteSummaryExportData = [];
+            const weeklyRouteSummaryTableHeadEl = document.getElementById('weeklyRouteSummaryTable').getElementsByTagName('thead')[0].getElementsByTagName('tr')[0];
+            weeklyRouteSummaryTableHeadEl.innerHTML = `
+                <th data-sortable="true" data-column="0">Route ID</th>
+                <th data-sortable="true" data-column="1">Zone</th>
+                <th data-sortable="true" data-column="2" data-type="number">Number Of Stops</th>
+                <th data-sortable="true" data-column="3" data-type="number">Total Distance (Miles)</th>
+                <th data-sortable="true" data-column="4" data-type="number">Total Service Time (Mins)</th>
+                <th data-sortable="true" data-column="5" data-type="number">Total Travel Time (Mins)</th>
+                <th data-sortable="true" data-column="6" data-type="number">Total Duration (Mins)</th>
+                <th data-sortable="true" data-column="7" data-type="number">Execution Count (Weekly)</th>
+                <th data-sortable="true" data-column="8">Days Executed</th>
+                <th data-sortable="true" data-column="9">Assigned Merchandisers</th>
+                <th data-sortable="false">List Of StoreIDs Serviced</th>`;
+            
+            const routesAggregated = {}; // Key: finalRouteID
+            generatedRoutes.forEach(route => {
+                const routeID = route.finalRouteID;
+                if (!routesAggregated[routeID]) {
+                    const storeList = route.stops.filter(s => s.type !== 'Break').map(s => s.storeId);
+                    routesAggregated[routeID] = {
+                        zone: route.primaryRouteFS,
+                        numberOfStops: storeList.length,
+                        totalServiceTime_Mins: route.totalServiceMinutes,
+                        totalTravelTime_Mins: route.totalTravelMinutes,
+                        totalDuration_Mins: route.totalDurationMinutes,
+                        totalDistance_Miles: route.totalDistance,
+                        executionCount_Weekly: 0,
+                        daysExecuted: new Set(),
+                        assignedMerchandisers: new Set(),
+                        listOfStoreIDs_Serviced: storeList.join(',')
+                    };
+                }
+                routesAggregated[routeID].executionCount_Weekly++;
+                routesAggregated[routeID].daysExecuted.add(route.dayOfWeek);
+                routesAggregated[routeID].assignedMerchandisers.add(route.merchId);
+            });
+
+            Object.keys(routesAggregated).sort().forEach(routeID => {
+                const data = routesAggregated[routeID];
+                const formattedDays = formatDayString(data.daysExecuted);
+                const row = `<tr>
+                    <td>${routeID}</td><td>${data.zone}</td><td>${data.numberOfStops}</td>
+                    <td>${data.totalDistance_Miles.toFixed(1)}</td><td>${data.totalServiceTime_Mins}</td>
+                    <td>${data.totalTravelTime_Mins}</td><td>${data.totalDuration_Mins}</td>
+                    <td>${data.executionCount_Weekly}</td>
+                    <td>${formattedDays}</td>
+                    <td>${Array.from(data.assignedMerchandisers).join(', ')}</td><td>${data.listOfStoreIDs_Serviced}</td>
+                </tr>`;
+                weeklyRouteSummaryTableBodyEl.innerHTML += row;
+                weeklyRouteSummaryExportData.push({
+                    "Route_ID": routeID, "Zone": data.zone, "Number_Of_Stops": data.numberOfStops,
+                    "Total_Distance_Miles": data.totalDistance_Miles.toFixed(1), 
+                    "Total_Service_Time_Mins": data.totalServiceTime_Mins,
+                    "Total_Travel_Time_Mins": data.totalTravelTime_Mins, 
+                    "Total_Duration_Mins": data.totalDuration_Mins,
+                    "Execution_Count_Weekly": data.executionCount_Weekly, 
+                    "Days_Executed": formattedDays,
+                    "Assigned_Merchandisers": Array.from(data.assignedMerchandisers).join(', '),
+                    "List_Of_StoreIDs_Serviced": data.listOfStoreIDs_Serviced
+                });
+            });
+            excelExportData['Weekly Route Summary'] = weeklyRouteSummaryExportData;
+
+            // --- 3. Prepare Data for Store Visit Schedule Tab & Excel ---
+             allStopsForSchedule = []; // Reset and re-populate
+             generatedRoutes.forEach(route => {
+                const routeID = route.finalRouteID;
+                route.stops.forEach(stop => {
+                    if (stop.type !== 'Break') { 
+                        const stopId = `${routeID}_S${String(stop.stopSequence).padStart(2, '0')}`;
+                        allStopsForSchedule.push({
+                            storeId: stop.storeId, customer: stop.customer, day: route.dayOfWeek,
+                            arrival: stop.arrivalTime, service: stop.serviceDurationMinutes, merchId: route.merchId,
+                            routeID: routeID, stopId: stopId
+                        });
+                    }
+                });
+            });
+            allStopsForSchedule.sort((a,b) => a.storeId.localeCompare(b.storeId) || dayOrder.indexOf(a.day) - dayOrder.indexOf(b.day) || a.arrival.localeCompare(b.arrival));
+            
+            const storeScheduleTableHeadEl = document.getElementById('storeScheduleTable').getElementsByTagName('thead')[0].getElementsByTagName('tr')[0];
+            storeScheduleTableHeadEl.innerHTML = `
+                <th data-sortable="true" data-column="0">Store Number WF</th><th data-sortable="true" data-column="1">Customer</th>
+                <th data-sortable="true" data-column="2">Scheduled Day</th><th data-sortable="true" data-column="3">Arrival Time</th>
+                <th data-sortable="true" data-column="4" data-type="number">Service (min)</th><th data-sortable="true" data-column="5">Assigned Merch. ID</th>
+                <th data-sortable="true" data-column="6">Route ID</th><th data-sortable="true" data-column="7">Stop ID</th>`;
+            
+            const storeScheduleExportData = [];
+            allStopsForSchedule.forEach(s => {
+                const row = `<tr>
+                    <td>${s.storeId}</td><td>${s.customer}</td><td>${s.day}</td><td>${s.arrival}</td>
+                    <td>${s.service}</td><td>${s.merchId}</td><td>${s.routeID}</td><td>${s.stopId}</td>
+                </tr>`; 
+                storeScheduleTableBodyEl.innerHTML += row;
+                storeScheduleExportData.push({ 
+                    "Store_Number_WF": s.storeId, "Customer": s.customer, "Scheduled_Visit_Day": s.day,
+                    "Scheduled_Arrival_Time": s.arrival, "Scheduled_Service_Duration_Mins": s.service,
+                    "Assigned_Merchandiser_ID": s.merchId, "Route_ID": s.routeID, "Stop_ID": s.stopId
+                });
+            });
+            excelExportData['Store Visit Schedule'] = storeScheduleExportData;
+
+            // --- 4. Prepare Data for Weekly Context Stop Log Tab & Excel ---
+            weeklyContextStopLogTableBodyEl.innerHTML = ''; 
+            const weeklyContextStopLogExportDataNew = [];
+            const weeklyContextHeadersNew = [ 
+                "Stop_ID_Context", "Route_ID_Context",
+                "NumStops_In_Daily_Instance", "Store_Frequency", "Store_WeeklyVisits", 
+                "Actual_Stop_Arrival_Time", "Actual_Stop_Duration_Mins", "Actual_Stop_Sequence_In_Daily_Instance", "Store_Details",
+                "Time-MO", "Time-TU", "Time-WE", "Time-TH", "Time-FR", "Time-SA", "Time-SU",
+                "Merch_Weekly_Service_Hrs", "Daily_Route_Driving_Hrs", "Merch_Weekly_Days_Worked", "Merch_Weekly_Total_Hrs", 
+                "Daily_Route_Mileage", 
+                "MerchAssigned-MO", "MerchAssigned-TU", "MerchAssigned-WE", "MerchAssigned-TH", "MerchAssigned-FR", "MerchAssigned-SA", "MerchAssigned-SU"
+            ];
+            
+            const weeklyContextStopLogTableHeadEl = document.getElementById('weeklyContextStopLogTable').getElementsByTagName('thead')[0].getElementsByTagName('tr')[0];
+            weeklyContextStopLogTableHeadEl.innerHTML = weeklyContextHeadersNew.map((h, i) => `<th data-sortable="true" data-column="${i}">${h.replace(/_/g, ' ')}</th>`).join('');
+
+            generatedRoutes.forEach(route => { 
+                const routeID_Context = route.finalRouteID;
+                const numStopsOnDailyRoute = route.stops.filter(s => s.type !== 'Break').length;
+                const dailyRouteTravelHours = (route.totalTravelMinutes / 60);
+                const dailyRouteMileage = route.totalDistance;
+
+                route.stops.forEach(stop => { 
+                    if (stop.type === 'Break') return; 
+
+                    const stopID_Context = `${routeID_Context}_S${String(stop.stopSequence).padStart(2, '0')}`;
+                    const storeOriginalData = stop.originalStoreData || {};
+                    const storeWeeklyVisits = parseInt(storeOriginalData.WeeklyVisits) || 0;
+
+                    const storeScheduleDetails = {MO: {}, TU: {}, WE: {}, TH: {}, FR: {}, SA: {}, SU: {}};
+                    let actualServiceDays = new Set();
+                    allStopsForSchedule.filter(s => s.storeId === stop.storeId).forEach(scheduledVisit => {
+                        storeScheduleDetails[scheduledVisit.day] = {
+                            time: scheduledVisit.arrival, 
+                            merch: scheduledVisit.merchId
+                        };
+                        actualServiceDays.add(scheduledVisit.day);
+                    });
+                    const frequency = formatDayString(actualServiceDays);
+                    
+                    const merchStats = finalMerchWeeklyStats[route.merchId] || { serviceMinutes: 0, travelMinutes: 0, daysWorked: {size: 0}, totalWeeklyMinutes: 0, totalDistance: 0 };
+                    const merchDaysWorked = formatDayString(merchStats.daysWorked);
+
+                    const rowData = {
+                        "Stop_ID_Context": stopID_Context, "Route_ID_Context": routeID_Context,
+                        "NumStops_In_Daily_Instance": numStopsOnDailyRoute, "Store_Frequency": frequency, "Store_WeeklyVisits": storeWeeklyVisits,
+                        "Actual_Stop_Arrival_Time": stop.arrivalTime, "Actual_Stop_Duration_Mins": stop.serviceDurationMinutes, 
+                        "Actual_Stop_Sequence_In_Daily_Instance": stop.stopSequence, 
+                        "Store_Details": `${stop.storeId} ${stop.customer || ''}`.trim(),
+                        "Time-MO": storeScheduleDetails.MO.time || '', "Time-TU": storeScheduleDetails.TU.time || '', "Time-WE": storeScheduleDetails.WE.time || '',
+                        "Time-TH": storeScheduleDetails.TH.time || '', "Time-FR": storeScheduleDetails.FR.time || '', "Time-SA": storeScheduleDetails.SA.time || '', "Time-SU": storeScheduleDetails.SU.time || '',
+                        "Merch_Weekly_Service_Hrs": (merchStats.serviceMinutes / 60).toFixed(2),
+                        "Daily_Route_Driving_Hrs": dailyRouteTravelHours.toFixed(2), "Merch_Weekly_Days_Worked": merchDaysWorked, "Merch_Weekly_Total_Hrs": (merchStats.totalWeeklyMinutes / 60).toFixed(1),
+                        "Daily_Route_Mileage": dailyRouteMileage.toFixed(2), 
+                        "MerchAssigned-MO": storeScheduleDetails.MO.merch || '', "MerchAssigned-TU": storeScheduleDetails.TU.merch || '', "MerchAssigned-WE": storeScheduleDetails.WE.merch || '',
+                        "MerchAssigned-TH": storeScheduleDetails.TH.merch || '', "MerchAssigned-FR": storeScheduleDetails.FR.merch || '', "MerchAssigned-SA": storeScheduleDetails.SA.merch || '', "MerchAssigned-SU": storeScheduleDetails.SU.merch || ''
+                    };
+                    weeklyContextStopLogExportDataNew.push(rowData);
+
+                    let tableRowHTML = '<tr>';
+                    weeklyContextHeadersNew.forEach(headerKey => {
+                        let displayValue = rowData[headerKey]; 
+                        if (displayValue === undefined) displayValue = ''; 
+                        tableRowHTML += `<td>${displayValue}</td>`;
+                    });
+                    tableRowHTML += '</tr>';
+                    weeklyContextStopLogTableBodyEl.innerHTML += tableRowHTML;
+                });
+            });
+            excelExportData['Weekly Context Stop Log'] = weeklyContextStopLogExportDataNew;
+
+            // --- 5. Merch Weekly Overview ---
+            const weeklyOverviewExportData = [];
+            Object.keys(finalMerchWeeklyStats).sort().forEach(merchId => {
+                const data = finalMerchWeeklyStats[merchId];
+                const daysString = formatDayString(data.daysWorked);
+                const row = `<tr>
+                    <td>${merchId}</td><td>${data.zone || 'N/A'}</td><td>${daysString}</td>
+                    <td>${Math.round(data.totalWeeklyMinutes)}</td><td>${Math.round(data.travelMinutes)}</td>
+                    <td>${Math.round(data.serviceMinutes)}</td><td>${data.totalDistance.toFixed(1)}</td><td>${data.totalStops}</td>
+                </tr>`;
+                weeklyOverviewTableBodyEl.innerHTML += row;
+                weeklyOverviewExportData.push({ 
+                    "Merchandiser_ID": merchId, "Zone": data.zone || 'N/A', "Serviced_Days": daysString,
+                    "Total_Weekly_Duration_Minutes": Math.round(data.totalWeeklyMinutes),
+                    "Total_Weekly_Travel_Minutes": Math.round(data.travelMinutes),
+                    "Total_Weekly_Service_Minutes": Math.round(data.serviceMinutes),
+                    "Total_Weekly_Distance_Miles": data.totalDistance.toFixed(1),
+                    "Total_Stops": data.totalStops
+                });
+            });
+            excelExportData['Merch Weekly Overview'] = weeklyOverviewExportData;
+            
+            // --- 6. Workload Analysis ---
+            const workloadExportData = [];
+            let chartLabels = []; 
+            let chartDataHours = []; 
+            
+            Object.keys(finalMerchWeeklyStats).sort().forEach(merchId => {
+                const data = finalMerchWeeklyStats[merchId];
+                const totalWeeklyHoursWithPaidBreaks = data.totalWeeklyMinutes / 60; 
+                const hoursForUnpaidBreakScenario = (data.totalWeeklyMinutes - data.breakMinutes) / 60; 
+                const serviceHours = data.serviceMinutes / 60;
+                const travelHours = data.travelMinutes / 60;
+                const percentTravelTime = totalWeeklyHoursWithPaidBreaks > 0 ? (travelHours / totalWeeklyHoursWithPaidBreaks) * 100 : 0;
+                const avgStopsPerDay = data.daysWorked.size > 0 ? data.totalStops / data.daysWorked.size : 0;
+                const costPaidForThisMerch = (totalWeeklyHoursWithPaidBreaks * config.costPerHour) + (data.totalDistance * config.costPerMile);
+                const costUnpaidForThisMerch = (hoursForUnpaidBreakScenario * config.costPerHour) + (data.totalDistance * config.costPerMile);
+                const costPerStopPaid = data.totalStops > 0 ? costPaidForThisMerch / data.totalStops : 0;
+                
+                let flagged = ''; 
+                if (totalWeeklyHoursWithPaidBreaks < config.softMinWeeklyHours) flagged = 'Below Min Hours';
+                else if (totalWeeklyHoursWithPaidBreaks > config.targetWeeklyHours * 1.15) flagged = 'Over Target (15%+)'; 
+                
+                chartLabels.push(merchId); 
+                chartDataHours.push(totalWeeklyHoursWithPaidBreaks.toFixed(1));
+                
+                const row = `<tr>
+                    <td>${merchId}</td><td>${totalWeeklyHoursWithPaidBreaks.toFixed(1)}</td><td>${serviceHours.toFixed(1)}</td>
+                    <td>${travelHours.toFixed(1)}</td><td>${percentTravelTime.toFixed(1)}%</td><td>${avgStopsPerDay.toFixed(1)}</td>
+                    <td>${data.totalDistance.toFixed(1)}</td>
+                    <td>${costPaidForThisMerch.toFixed(2)}</td><td>${costUnpaidForThisMerch.toFixed(2)}</td>
+                    <td>${costPerStopPaid.toFixed(2)}</td>
+                    <td class="${flagged ? 'text-red-600 font-semibold' : ''}">${flagged}</td>
+                </tr>`;
+                workloadTableBodyEl.innerHTML += row;
+                workloadExportData.push({ 
+                    "Merchandiser_ID": merchId, "Total_Weekly_Hours": totalWeeklyHoursWithPaidBreaks.toFixed(1),
+                    "Service_Hours": serviceHours.toFixed(1), "Travel_Hours": travelHours.toFixed(1),
+                    "Percent_Travel_Time": percentTravelTime.toFixed(1), "Avg_Stops_Per_Day": avgStopsPerDay.toFixed(1),
+                    "Total_Distance_Miles": data.totalDistance.toFixed(1),
+                    "Est_Cost_Breaks_Paid_($)": costPaidForThisMerch.toFixed(2),
+                    "Est_Cost_Breaks_Unpaid_($)": costUnpaidForThisMerch.toFixed(2),
+                    "Cost_Per_Stop_Breaks_Paid_($)": costPerStopPaid.toFixed(2),
+                    "Flagged": flagged
+                });
+            });
+            excelExportData['Workload Analysis'] = workloadExportData;
+
+            const workloadChartCtx = document.getElementById('workloadBalanceChart').getContext('2d');
+            if (workloadBalanceChartInstance) { workloadBalanceChartInstance.destroy(); } 
+            workloadBalanceChartInstance = new Chart(workloadChartCtx, {
+                type: 'bar',
+                data: {
+                    labels: chartLabels,
+                    datasets: [{
+                        label: 'Actual Weekly Hours', data: chartDataHours,
+                        backgroundColor: 'rgba(54, 162, 235, 0.6)', borderColor: 'rgba(54, 162, 235, 1)', borderWidth: 1
+                    }, {
+                        label: 'Target Weekly Hours', data: Array(chartLabels.length).fill(config.targetWeeklyHours), 
+                        type: 'line', borderColor: 'rgba(255, 99, 132, 1)', backgroundColor: 'transparent',
+                        borderWidth: 2, pointRadius: 0, fill: false
+                    }]
+                },
+                options: { scales: { y: { beginAtZero: true, title: { display: true, text: 'Hours' } } }, responsive: true, maintainAspectRatio: false }
+            });
+
+            // --- 7. Prepare Data for Augmented Store Master Tab & Excel ---
+            const augmentedStoreMasterExportData = [];
+            const augmentedHeaders = [...(csvHeaders.storeMaster || Object.keys(sMasterData[0] || {})), 
+                'Serviced_MO', 'Serviced_TU', 'Serviced_WE', 'Serviced_TH', 'Serviced_FR', 'Serviced_SA', 'Serviced_SU',
+                'Assigned_Merchandiser_IDs_Weekly', 'Scheduled_Visit_Details_Weekly'];
+            
+            augmentedStoreMasterTableHeadEl.innerHTML = augmentedHeaders.map((h, i) => `<th data-sortable="true" data-column="${i}">${h.replace(/_/g, ' ')}</th>`).join(''); 
+
+            sMasterData.forEach(store => {
+                let augmentedRowData = {};
+                (csvHeaders.storeMaster || Object.keys(store)).forEach(header => {
+                    augmentedRowData[header] = store[header] || ''; 
+                });
+
+                const days = ['MO', 'TU', 'WE', 'TH', 'FR', 'SA', 'SU'];
+                days.forEach(d => augmentedRowData[`Serviced_${d}`] = 0); 
+                let assignedMerchsForStore = new Set(); 
+                let visitDetails = []; 
+
+                allStopsForSchedule.filter(visit => visit.storeId === store['Store Number WF'])
+                .sort((a,b) => dayOrder.indexOf(a.day) - dayOrder.indexOf(b.day)) // Sort visits by day
+                .forEach(visit => {
+                    if(days.includes(visit.day)) augmentedRowData[`Serviced_${visit.day}`] = 1; 
+                    assignedMerchsForStore.add(visit.merchId);
+                    visitDetails.push(`${visit.day}@${visit.arrival}(${visit.merchId} on ${visit.routeID})`);
+                });
+
+                augmentedRowData['Assigned_Merchandiser_IDs_Weekly'] = Array.from(assignedMerchsForStore).join('; ');
+                augmentedRowData['Scheduled_Visit_Details_Weekly'] = visitDetails.join(' | ');
+                
+                augmentedStoreMasterExportData.push(augmentedRowData); 
+
+                let tableRowHtml = "<tr>";
+                augmentedHeaders.forEach(header => { 
+                     tableRowHtml += `<td>${augmentedRowData[header] !== undefined ? augmentedRowData[header] : ''}</td>`;
+                });
+                tableRowHtml += "</tr>";
+                augmentedStoreMasterTableBodyEl.innerHTML += tableRowHtml;
+            });
+            excelExportData['Augmented Stores'] = augmentedStoreMasterExportData;
+            
+            // --- 8. Unassigned Visits ---
+            const unassignedVisitsExportData = [];
+            unassignedVisitsData.forEach(visit => {
+                const row = `<tr>
+                    <td>${visit.storeId}</td><td>${visit.customer}</td><td>${visit.dayOfWeek}</td>
+                    <td>${visit.visitDuration}</td><td>${visit.zone || 'N/A'}</td><td>${visit.reason || 'N/A'}</td>
+                </tr>`;
+                unassignedVisitsTableBodyEl.innerHTML += row;
+                unassignedVisitsExportData.push({ 
+                    "Store_Number_WF": visit.storeId, "Customer": visit.customer, "Day_Of_Week": visit.dayOfWeek,
+                    "Visit_Duration_Mins": visit.visitDuration, "Zone": visit.zone || '', "Reason": visit.reason || ''
+                });
+            });
+            excelExportData['Unassigned Visits'] = unassignedVisitsExportData;
+
+            // --- 9. Zone Performance ---
+            const zonePerformanceExportData = [];
+            const zonePerformanceAgg = {}; 
+            generatedRoutes.forEach(route => {
+                const zoneKey = route.primaryRouteFS;
+                if (!zonePerformanceAgg[zoneKey]) { 
+                    zonePerformanceAgg[zoneKey] = {
+                        totalStoresInZoneInput: sMasterData.filter(s => s[config.optimizationZoneColumnName] === zoneKey).length, 
+                        totalVisitsProcessed: 0, merchIds: new Set(), totalCost: 0,
+                        totalRouteDuration: 0, totalTravelDuration: 0, totalServiceDuration: 0
+                    };
+                }
+                zonePerformanceAgg[zoneKey].totalVisitsProcessed += route.stops.filter(s => s.type !== 'Break').length;
+                zonePerformanceAgg[zoneKey].merchIds.add(route.merchId);
+                const currentRouteCostForZone = (config.breakPayment === 'paid') ?
+                    (((route.totalDurationMinutes) / 60) * config.costPerHour) + (route.totalDistance * config.costPerMile) :
+                    (((route.totalDurationMinutes - route.totalBreakMinutes) / 60) * config.costPerHour) + (route.totalDistance * config.costPerMile);
+                zonePerformanceAgg[zoneKey].totalCost += currentRouteCostForZone;
+                zonePerformanceAgg[zoneKey].totalRouteDuration += route.totalDurationMinutes;
+                zonePerformanceAgg[zoneKey].totalTravelDuration += route.totalTravelMinutes;
+                zonePerformanceAgg[zoneKey].totalServiceDuration += route.totalServiceMinutes;
+            });
+            Object.keys(zonePerformanceAgg).sort().forEach(key => { 
+                const data = zonePerformanceAgg[key];
+                const row = `<tr>
+                    <td>${key}</td><td>${data.totalStoresInZoneInput}</td><td>${data.totalVisitsProcessed}</td>
+                    <td>${data.merchIds.size}</td><td>${data.totalCost.toFixed(2)}</td>
+                    <td>${data.totalRouteDuration}</td><td>${data.totalTravelDuration}</td><td>${data.totalServiceDuration}</td>
+                </tr>`;
+                zonePerformanceTableBodyEl.innerHTML += row;
+                zonePerformanceExportData.push({ 
+                    "Zone": key, "Total_Stores_in_Zone": data.totalStoresInZoneInput,
+                    "Total_Visits_Processed": data.totalVisitsProcessed, "Merchandisers_Assigned_Count": data.merchIds.size,
+                    "Total_Est_Cost_($)": data.totalCost.toFixed(2), "Total_Route_Duration_(min)": data.totalRouteDuration,
+                    "Total_Travel_Duration_(min)": data.totalTravelDuration, "Total_Service_Duration_(min)": data.totalServiceDuration
+                });
+            });
+            excelExportData['Zone Performance'] = zonePerformanceExportData;
+
+            // --- 10. Fleet Weekly Summary ---
+            const fleetSummaryExportData = []; 
+            let totalFleetWeeklyDistance = 0;
+            let totalFleetWeeklyServiceMinutes = 0;
+            let totalFleetWeeklyTravelMinutes = 0;
+            let totalFleetWeeklyBreakMinutes = 0;
+            let uniqueStoresServicedThisWeek = new Set();
+            
+            generatedRoutes.forEach(route => {
+                totalFleetWeeklyDistance += route.totalDistance;
+                totalFleetWeeklyServiceMinutes += route.totalServiceMinutes;
+                totalFleetWeeklyTravelMinutes += route.totalTravelMinutes;
+                totalFleetWeeklyBreakMinutes += route.totalBreakMinutes;
+                route.stops.forEach(s => { if(s.type !== 'Break') uniqueStoresServicedThisWeek.add(s.storeId); });
+            });
+            
+            const totalOverallCostPaid_Fleet = Object.values(finalMerchWeeklyStats).reduce((sum, merch) => {
+                const hours = merch.totalWeeklyMinutes / 60;
+                return sum + (hours * config.costPerHour) + (merch.totalDistance * config.costPerMile);
+            }, 0);
+            const totalOverallCostUnpaid_Fleet = Object.values(finalMerchWeeklyStats).reduce((sum, merch) => {
+                const hours = (merch.totalWeeklyMinutes - merch.breakMinutes) / 60; 
+                return sum + (hours * config.costPerHour) + (merch.totalDistance * config.costPerMile);
+            }, 0);
+            const totalWeeklyHoursSum_Fleet = Object.values(finalMerchWeeklyStats).reduce((sum, merch) => sum + (merch.totalWeeklyMinutes / 60), 0);
+            const totalMerchsUsed = Object.keys(finalMerchWeeklyStats).length;
+            const avgWeeklyHours = totalMerchsUsed > 0 ? (totalWeeklyHoursSum_Fleet / totalMerchsUsed) : 0;
+            const finalCostToDisplay = config.breakPayment === 'paid' ? totalOverallCostPaid_Fleet : totalOverallCostUnpaid_Fleet;
+            const totalFleetWeeklyDuration = totalFleetWeeklyServiceMinutes + totalFleetWeeklyTravelMinutes + totalFleetWeeklyBreakMinutes;
+            const avgDailyRoutesPerMerch = totalMerchsUsed > 0 ? (generatedRoutes.length / totalMerchsUsed) : 0;
+            const totalWeeklyStopsFleet = Object.values(finalMerchWeeklyStats).reduce((sum, m) => sum + m.totalStops, 0);
+            const avgWeeklyStopsPerMerch = totalMerchsUsed > 0 ? totalWeeklyStopsFleet / totalMerchsUsed : 0;
+
+            const fleetSummaryStats = [ 
+                { Metric: "Total Weekly Store Visits (Calculated)", Value: totalWeeklyStoreVisitsCalculated },
+                { Metric: "Total Weekly Distance (Fleet)", Value: `${totalFleetWeeklyDistance.toFixed(1)} miles` },
+                { Metric: "Total Weekly Duration (Fleet)", Value: `${totalFleetWeeklyDuration} min (${(totalFleetWeeklyDuration/60).toFixed(1)} hrs)` },
+                { Metric: "Total Weekly Service Time", Value: `${totalFleetWeeklyServiceMinutes} min (${(totalFleetWeeklyServiceMinutes/60).toFixed(1)} hrs)` },
+                { Metric: "Total Weekly Travel Time", Value: `${totalFleetWeeklyTravelMinutes} min (${(totalFleetWeeklyTravelMinutes/60).toFixed(1)} hrs)` },
+                { Metric: "Total Weekly Break Time", Value: `${totalFleetWeeklyBreakMinutes} min (${(totalFleetWeeklyBreakMinutes/60).toFixed(1)} hrs)` },
+                { Metric: "Total Weekly Estimated Cost", Value: `$${finalCostToDisplay.toFixed(2)} (Breaks ${config.breakPayment})` },
+                { Metric: "Total Unique Stores Serviced", Value: uniqueStoresServicedThisWeek.size },
+                { Metric: "Avg. Daily Routes per Merchandiser", Value: avgDailyRoutesPerMerch.toFixed(1) },
+                { Metric: "Avg. Weekly Stops per Merchandiser", Value: avgWeeklyStopsPerMerch.toFixed(1) }
+            ];
+
+            fleetWeeklySummaryTableBodyEl.innerHTML = ''; 
+            fleetSummaryStats.forEach(stat => {
+                fleetWeeklySummaryTableBodyEl.innerHTML += `<tr><td>${stat.Metric}</td><td>${stat.Value}</td></tr>`;
+                fleetSummaryExportData.push(stat); 
+            });
+            excelExportData['Fleet Summary'] = fleetSummaryExportData; 
+            excelExportData['Run Stats'] = fleetSummaryExportData; 
+
+
+            // --- Populate Top Summary Cards ---
+            resultsSummaryEl.innerHTML = `
+                <div class="p-4 bg-sky-100 rounded-lg shadow"><p class="font-semibold text-sky-700">Total Weekly Visits:</p><p class="text-2xl">${totalWeeklyStoreVisitsCalculated}</p></div>
+                <div class="p-4 bg-blue-100 rounded-lg shadow"><p class="font-semibold text-blue-700">Total Daily Routes Generated:</p><p class="text-2xl">${generatedRoutes.length}</p></div>
+                <div class="p-4 bg-green-100 rounded-lg shadow"><p class="font-semibold text-green-700">Merchandisers Utilized:</p><p class="text-2xl">${totalMerchsUsed}</p></div>
+                <div class="p-4 bg-yellow-100 rounded-lg shadow"><p class="font-semibold text-yellow-700">Total Est. Cost (Breaks ${config.breakPayment}):</p><p class="text-2xl">$${finalCostToDisplay.toFixed(2)}</p></div>
+                <div class="p-4 bg-indigo-100 rounded-lg shadow"><p class="font-semibold text-indigo-700">Avg. Weekly Hours/Merch:</p><p class="text-2xl">${avgWeeklyHours.toFixed(1)}</p></div>
+                <div class="p-4 bg-purple-100 rounded-lg shadow"><p class="font-semibold text-purple-700">Total Weekly Distance (Fleet):</p><p class="text-2xl">${totalFleetWeeklyDistance.toFixed(1)} mi</p></div>
+            `;
+
+            resultsSectionEl.classList.remove('hidden');
+            loadingIndicatorEl.classList.add('hidden');
+            showMessage(dataValidationSummaryEl, "Optimization Complete. Results displayed below.", false, true); 
+        }
+
+        // --- Main Optimization Function ---
+        async function runOptimization() {
+            console.log("runOptimization function called (v12.12).");
+            updateProgress("Starting", 0, "Gathering Configuration");
+            loadingIndicatorEl.classList.remove('hidden');
+            optimizationProgressDetailsEl.classList.remove('hidden');
+            hideMessage(optimizationErrorEl); 
+            hideMessage(dataValidationSummaryEl); 
+
+            const config = {
+                runName: runNameEl.value,
+                earliestStartTime: earliestStartTimeEl.value,
+                earliestStartTimeMinutes: timeToMinutes(earliestStartTimeEl.value),
+                useTrafficData: useTrafficDataEl.value === 'true',
+                minStops: parseInt(minStopsEl.value),
+                maxStops: parseInt(maxStopsEl.value),
+                maxRouteTime: parseInt(maxRouteTimeEl.value),
+                maxPairTime: parseInt(maxPairTimeEl.value),
+                costPerHour: parseFloat(costPerHourEl.value),
+                costPerMile: parseFloat(costPerMileEl.value),
+                enableBreaks: enableBreaksEl.value === 'yes',
+                breakDuration: parseInt(breakDurationEl.value),
+                workDurationBeforeBreak: parseInt(workDurationBeforeBreakEl.value),
+                minRouteDurationForBreak: parseInt(minRouteDurationForBreakEl.value),
+                breakPayment: breakPaymentEl.value,
+                targetWeeklyHours: parseInt(targetWeeklyHoursEl.value),
+                softMinWeeklyHours: parseInt(softMinWeeklyHoursEl.value),
+                maxMerchsPerZone: parseInt(maxMerchsPerZoneEl.value) || Infinity, 
+                minDaysOnSameRoute: parseInt(minDaysOnSameRouteEl.value),
+                optimizationZoneColumnName: optimizationZoneColumnNameEl.value.trim() || "Zone", 
+                matrixSource: matrixSourceApiEl.checked ? 'api' : 'upload',
+                citySpeed: parseFloat(citySpeedEl.value),
+                highwaySpeed: parseFloat(highwaySpeedEl.value),
+                distanceThreshold: parseFloat(distanceThresholdEl.value),
+                default3Visits: default3VisitsEl.value.toUpperCase().split(/[\s,-]+/).filter(Boolean), 
+                default4Visits: default4VisitsEl.value.toUpperCase().split(/[\s,-]+/).filter(Boolean),
+                storeMasterFileName: storeMasterFileEl.files[0] ? storeMasterFileEl.files[0].name : null,
+                distanceMatrixFileName: distanceMatrixFileEl.files[0] ? distanceMatrixFileEl.files[0].name : null,
+                minStopsForLeftoverRoute: 1 
+            };
+            lastRunConfig = { ...config }; 
+
+            updateProgress("Validating Inputs", 5, "Basic Validation");
+            if (storeMasterData.length === 0 && (!storeMasterFileEl.files[0] || storeMasterFileEl.files[0].name === "") ) {
+                showMessage(optimizationErrorEl, "Store Master Data is not loaded. Please upload the file.", true);
+                loadingIndicatorEl.classList.add('hidden');
+                return;
+            }
+            if (!validateStoreMaster()) { 
+                loadingIndicatorEl.classList.add('hidden');
+                return;
+            }
+            if (config.matrixSource === 'upload') { 
+                if (distanceMatrixData.length === 0) { 
+                    showMessage(optimizationErrorEl, "Distance Matrix is set to 'upload', but no valid matrix data has been loaded. Please upload or re-upload a valid DistanceMatrix.csv file, or select API calculation.", true);
+                    loadingIndicatorEl.classList.add('hidden');
+                    return;
+                }
+                if (!validateStoreMatrixConsistency(config)) { 
+                    loadingIndicatorEl.classList.add('hidden');
+                    return;
+                }
+            }
+            await new Promise(resolve => setTimeout(resolve, 50)); 
+
+            updateProgress("Processing", 10, "Assigning Visit Days");
+            merchandiserWeeklyStats = {}; 
+            nextMerchCountersByZone = {};
+            merchandiserRouteCounters = {};
+            zoneDayRouteCounters = {};
+
+            let allWeeklyVisits = assignVisitDaysForAllStores(storeMasterData, config);
+            allWeeklyVisits.forEach(v => {
+                v.isAssignedThisRun = false; 
+                v.isAssignedThisRouteAttempt = false; 
+            });
+            await new Promise(resolve => setTimeout(resolve, 50));
+
+            updateProgress("Processing", 15, "Grouping Visits by Zone & Day");
+            const visitsGroupedByZoneAndDay = groupVisitsByZone(allWeeklyVisits, config.optimizationZoneColumnName);
+            await new Promise(resolve => setTimeout(resolve, 50));
+
+            updateProgress("Optimizing", 20, "Generating Initial Routes");
+            let allGeneratedDailyRoutes = []; 
+            
+            let progressCounter = 20;
+            const totalZonesInitialPass = Object.keys(visitsGroupedByZoneAndDay).length;
+            let zonesProcessedInitial = 0;
+
+            for (const zone of Object.keys(visitsGroupedByZoneAndDay)) {
+                updateProgress("Optimizing", progressCounter, `Initial Pass - Zone: ${zone}`);
+                for (const day of dayProcessingOrder) { 
+                    if (visitsGroupedByZoneAndDay[zone][day] && visitsGroupedByZoneAndDay[zone][day].length > 0) {
+                        let visitsForDayInZone = visitsGroupedByZoneAndDay[zone][day].filter(v => !v.isAssignedThisRun);
+                        
+                        while(visitsForDayInZone.length > 0) { 
+                            const segmentResult = buildUnassignedDailyRouteSegment(day, zone, visitsForDayInZone, config, false, config.minStops);
+                            if (segmentResult.routeObject) { 
+                                const assignmentResult = assignRoutesToMerchandisers(
+                                    [segmentResult.routeObject], 
+                                    config, 
+                                    merchandiserWeeklyStats, 
+                                    nextMerchCountersByZone,
+                                    allWeeklyVisits 
+                                );
+                                allGeneratedDailyRoutes.push(...assignmentResult.finalRoutes);
+                                merchandiserWeeklyStats = assignmentResult.finalMerchStats; 
+                                
+                                visitsForDayInZone = visitsForDayInZone.filter(v => {
+                                    const globalVisit = allWeeklyVisits.find(gv => gv.uniqueVisitId === v.uniqueVisitId);
+                                    return globalVisit ? !globalVisit.isAssignedThisRun : true; 
+                                });
+
+                            } else {
+                                break; 
+                            }
+                        }
+                    }
+                }
+                zonesProcessedInitial++;
+                progressCounter = 20 + Math.floor((zonesProcessedInitial / totalZonesInitialPass) * 50); 
+                await new Promise(resolve => setTimeout(resolve, 20)); 
+            }
+
+            updateProgress("Optimizing", 75, "Processing Unassigned Visits (Relaxed)");
+            let remainingUnassignedVisitsList = allWeeklyVisits.filter(v => !v.isAssignedThisRun);
+            
+            if (remainingUnassignedVisitsList.length > 0) {
+                console.log(`Attempting to schedule ${remainingUnassignedVisitsList.length} initially unassigned visits.`);
+                const unassignedGroupedByZoneAndDay = groupVisitsByZone(remainingUnassignedVisitsList, config.optimizationZoneColumnName);
+                
+                for (const zone of Object.keys(unassignedGroupedByZoneAndDay)) {
+                    updateProgress("Optimizing", progressCounter, `Leftover Pass - Zone: ${zone}`);
+                    for (const day of dayProcessingOrder) {
+                        if (unassignedGroupedByZoneAndDay[zone][day] && unassignedGroupedByZoneAndDay[zone][day].length > 0) {
+                            let visitsForLeftoverRoute = unassignedGroupedByZoneAndDay[zone][day].filter(v => !v.isAssignedThisRun);
+                            
+                            while(visitsForLeftoverRoute.length > 0) {
+                                const segmentResult = buildUnassignedDailyRouteSegment(day, zone, visitsForLeftoverRoute, config, true, config.minStopsForLeftoverRoute);
+                                if (segmentResult.routeObject) {
+                                    const assignmentResult = assignRoutesToMerchandisers(
+                                        [segmentResult.routeObject], 
+                                        config, 
+                                        merchandiserWeeklyStats, 
+                                        nextMerchCountersByZone,
+                                        allWeeklyVisits 
+                                    );
+                                    allGeneratedDailyRoutes.push(...assignmentResult.finalRoutes);
+                                    merchandiserWeeklyStats = assignmentResult.finalMerchStats;
+
+                                    visitsForLeftoverRoute = visitsForLeftoverRoute.filter(v => {
+                                        const globalVisit = allWeeklyVisits.find(gv => gv.uniqueVisitId === v.uniqueVisitId);
+                                        return globalVisit ? !globalVisit.isAssignedThisRun : true;
+                                    });
+                                } else {
+                                    break; 
+                                }
+                            }
+                        }
+                    }
+                    progressCounter = 75 + Math.floor(((Object.keys(unassignedGroupedByZoneAndDay).indexOf(zone) + 1) / Object.keys(unassignedGroupedByZoneAndDay).length) * 20);
+                    await new Promise(resolve => setTimeout(resolve, 20));
+                }
+            }
+            
+            updateProgress("Processing", 90, "Assigning Final Route IDs");
+            allGeneratedDailyRoutes = assignFinalRouteIDs(allGeneratedDailyRoutes, config);
+            await new Promise(resolve => setTimeout(resolve, 50));
+
+            let finalUnassignedVisitsForOutput = allWeeklyVisits.filter(v => !v.isAssignedThisRun).map(v => ({
+                storeId: v.storeId, customer: v.customer, dayOfWeek: v.dayOfWeek, 
+                visitDuration: v.visitDuration, zone: v.zone, reason: "Could not be scheduled into any route."
+            }));
+
+
+            updateProgress("Finalizing", 95, "Preparing Results Display");
+            await new Promise(resolve => setTimeout(resolve, 50));
+
+            displayResults(allGeneratedDailyRoutes, storeMasterData, config, merchandiserWeeklyStats, finalUnassignedVisitsForOutput);
+            updateProgress("Complete", 100, "Optimization Finished");
+            showMessage(dataValidationSummaryEl, "Optimization process completed.", false, true);
+            setTimeout(() => { 
+                loadingIndicatorEl.classList.add('hidden');
+                optimizationProgressDetailsEl.classList.add('hidden');
+            }, 1000);
+        }
+
+        // --- Excel Export Function (v12.11 - Updated sheet name) ---
+        function exportAllToExcel() {
+            if (Object.keys(excelExportData).length === 0) { 
+                showMessage(optimizationErrorEl, "No data to export. Please run the optimization first.", true);
+                setTimeout(() => hideMessage(optimizationErrorEl), 3000);
+                return;
+            }
+
+            const wb = XLSX.utils.book_new(); 
+
+            if (excelExportData['Run Stats'] && excelExportData['Run Stats'].length > 0) {
+                const summaryData = [["Metric", "Value"]]; 
+                excelExportData['Run Stats'].forEach(item => {
+                    summaryData.push([item.Metric, item.Value]);
+                });
+                const wsSummary = XLSX.utils.aoa_to_sheet(summaryData); 
+                XLSX.utils.book_append_sheet(wb, wsSummary, "Run Summary"); 
+            }
+
+            const sheetOrder = [
+                "Run Inputs", "Fleet Summary", 
+                "Weekly Route Summary", // RENAMED
+                "Zone Performance", "Merch Weekly Overview", "Workload Analysis",
+                "Detailed Stop Log", "Weekly Context Stop Log", 
+                "Store Visit Schedule", "Augmented Stores", "Unassigned Visits"
+            ];
+            
+            sheetOrder.forEach(sheetName => {
+                if (excelExportData[sheetName] && excelExportData[sheetName].length > 0) {
+                    if (sheetName === "Fleet Summary" && excelExportData['Run Stats'] && wb.SheetNames.includes("Run Summary")) {
+                        return; 
+                    }
+                    const ws = XLSX.utils.json_to_sheet(excelExportData[sheetName]); 
+                    XLSX.utils.book_append_sheet(wb, ws, sheetName);
+                } else {
+                    console.warn(`No data for Excel sheet: ${sheetName}`);
+                }
+            });
+            
+            const runNameForFile = sanitizeForId(runNameEl.value || "OptimizationRun"); 
+            XLSX.writeFile(wb, `${runNameForFile}_${new Date().toISOString().slice(0,10)}.xlsx`);
+            showMessage(dataValidationSummaryEl, "Excel file exported successfully.", false, true);
+             setTimeout(() => hideMessage(dataValidationSummaryEl), 3000);
+        }
+
+
+        // --- Event Listeners ---
+        document.addEventListener('DOMContentLoaded', () => {
+            matrixSourceUploadEl.addEventListener('change', () => { distanceMatrixUploadOptionsEl.classList.remove('hidden'); });
+            matrixSourceApiEl.addEventListener('change', () => { distanceMatrixUploadOptionsEl.classList.add('hidden'); });
+            
+            storeMasterFileEl.addEventListener('change', handleStoreMasterUpload);
+            distanceMatrixFileEl.addEventListener('change', handleDistanceMatrixUpload);
+            
+            if (runOptimizationBtnEl) { 
+                if (typeof runOptimization === 'function') { 
+                    runOptimizationBtnEl.addEventListener('click', runOptimization);
+                } else { 
+                    console.error("FATAL: runOptimization function is not defined when trying to attach listener!");
+                    showMessage(optimizationErrorEl, "FATAL ERROR: Optimization function not loaded. Please refresh or contact support.", true);
+                }
+            } else { 
+                console.error("FATAL: runOptimizationBtnEl not found in DOM on DOMContentLoaded!");
+                 showMessage(optimizationErrorEl, "FATAL ERROR: Core button missing. Please refresh or contact support.", true);
+            }
+            
+            if(resetFormBtnEl) resetFormBtnEl.addEventListener('click', resetApplicationState); 
+            if(exportAllToExcelBtnEl) exportAllToExcelBtnEl.addEventListener('click', exportAllToExcel);
+            
+            document.querySelectorAll('.results-table thead th[data-sortable="true"], .input-summary-table thead th[data-sortable="true"]').forEach(th => {
+                th.addEventListener('click', () => {
+                    const table = th.closest('table');
+                    const tbody = table.querySelector('tbody');
+                    const columnIndex = parseInt(th.dataset.column);
+                    const type = th.dataset.type || 'string'; 
+                    const currentIsAscending = th.classList.contains('sort-asc');
+                    
+                    sortTableByColumn(tbody, columnIndex, type, !currentIsAscending); 
+                    
+                    th.closest('thead').querySelectorAll('th').forEach(h => h.classList.remove('sort-asc', 'sort-desc'));
+                    th.classList.toggle('sort-asc', !currentIsAscending);
+                    th.classList.toggle('sort-desc', currentIsAscending);
+                });
+            });
+
+            Object.keys(filterInputs).forEach(key => {
+                if (filterInputs[key]) {
+                    filterInputs[key].addEventListener('keyup', () => {
+                        let tableId;
+                        switch(key) {
+                            case 'zonePerformance': tableId = 'zonePerformanceTable'; break;
+                            case 'weeklyRouteSummary': tableId = 'weeklyRouteSummaryTable'; break;
+                            default: tableId = key.toLowerCase() + 'Table'; break;
+                        }
+                        
+                        const table = document.getElementById(tableId);
+                        if (table && table.querySelector('tbody')) { 
+                            filterTable(table.querySelector('tbody'), filterInputs[key].value);
+                        } else {
+                            console.warn("Could not find table or tbody for filter key: ", key, "searched for id:", tableId);
+                        }
+                    });
+                }
+            });
+            
+            const firstTabButton = document.querySelector('.tabs button');
+            if (firstTabButton) {
+                firstTabButton.click(); 
+            }
+        });
+
+    </script>
+</body>
+</html>
